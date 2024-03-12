@@ -22,7 +22,7 @@ app.put("/wiki", async (req,res)=>{
     let info=req.body
     const query = `
     [out:json];
-    nwr["tourism"="attraction"](around:2000,`+info.lat+`,`+info.lon+`);
+    nwr["tourism"="attraction"](around:3000,`+info.lat+`,`+info.lon+`);
     out geom;
     `
     axios.post('https://overpass-api.de/api/interpreter', query).then(response => {
@@ -37,13 +37,21 @@ app.put("/wikiText", async (req,res)=>{
     if(info.wikipedia){
         nome=info.wikipedia.split(":")[1]
     }
-    if(info.city&&!nome.includes("("+info.city+")")){
+    if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
         nome=nome+" ("+info.city+")"
     }
     axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
         axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
             const array=[]
-            const primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').first()
+            let primoH3
+            let h
+            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
+                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').first()
+                h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
+            }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
+                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').first()
+                h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
+            }
             const paragrafo=primoH3.prevAll("p")
             let p=""
             paragrafo.each((index, element) => {
@@ -52,7 +60,6 @@ app.put("/wikiText", async (req,res)=>{
             if(p!==""){
                 array.push({titolo:"In generale",testo:p})
             }
-            const h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
             h.each((index, element) => {
                 let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                 let testo=""
@@ -67,7 +74,11 @@ app.put("/wikiText", async (req,res)=>{
             if(array.length>0){
                 res.send(array)
             }else{
-                res.send([{titolo:"In generale",testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                if(p!==""){
+                    res.send([{titolo:"In generale",testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                }else{
+                    res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+                }
             }
             
         })
