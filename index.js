@@ -33,7 +33,14 @@ app.put("/wiki", async (req,res)=>{
 })
 app.put("/wikiText", async (req,res)=>{
     let info=req.body
-    axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+info.nome).then(e=>{
+    let nome=info.nome
+    if(info.wikipedia){
+        nome=info.wikipedia.split(":")[1]
+    }
+    if(info.city&&!nome.includes("("+info.city+")")){
+        nome=nome+" ("+info.city+")"
+    }
+    axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
         axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
             const array=[]
             const primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').first()
