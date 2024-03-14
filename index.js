@@ -43,15 +43,8 @@ app.put("/wikiText", async (req,res)=>{
     axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
         axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
             const array=[]
-            let primoH3
-            let h
-            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').first()
-                h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
-            }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').first()
-                h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
-            }
+            const primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').first()
+            const h=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2')
             const paragrafo=primoH3.prevAll("p")
             let p=""
             paragrafo.each((index, element) => {
