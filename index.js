@@ -22,7 +22,7 @@ app.put("/wiki", async (req,res)=>{
     let info=req.body
     const query = `
     [out:json];
-    nwr["tourism"="attraction"](around:3000,`+info.lat+`,`+info.lon+`);
+    nwr["tourism"="attraction"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
     out geom;
     `
     axios.post('https://overpass-api.de/api/interpreter', query).then(response => {
