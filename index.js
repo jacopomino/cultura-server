@@ -41,40 +41,59 @@ app.put("/wikiText", async (req,res)=>{
         nome=nome+" ("+info.city+")"
     }
     axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
-        axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
-            const array=[]
-            const primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').first()
-            const h=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2')
-            const paragrafo=primoH3.prevAll("p")
-            let p=""
-            paragrafo.each((index, element) => {
-                p=p+" "+(cheerio.load(i.data.parse.text["*"])(element).text());
-            });
-            if(p!==""){
-                array.push({titolo:"In generale",testo:p})
-            }
-            h.each((index, element) => {
-                let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
-                let testo=""
-                const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h3', 'p')
-                paragraphs.each((index, paragraph) => {
-                    testo=testo+" "+(cheerio.load(i.data.parse.text["*"])(paragraph).text()); // Stampa il testo del paragrafo
+        if(e.data.query.search[0].pageid){
+            axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
+                const array=[]
+                let primoH3
+                let h
+                if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
+                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
+                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
+                    }else{
+                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
+                    }
+                    h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
+                }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
+                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
+                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
+                    }else{
+                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
+                    }
+                    h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
+                }
+                const paragrafo=primoH3.prevAll("p")
+                let p=""
+                paragrafo.each((index, element)=>{
+                    p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                 });
-                if(testo!==""){
-                    array.push({titolo:titolo,testo:testo})
-                }
-            });
-            if(array.length>0){
-                res.send(array)
-            }else{
                 if(p!==""){
-                    res.send([{titolo:"In generale",testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
-                }else{
-                    res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+                    array.push({titolo:"In generale",testo:p})
                 }
-            }
-            
-        })
+                h.each((index, element)=>{
+                    let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                    let testo=""
+                    const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                    paragraphs.each((index, paragraph)=>{
+                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text(); // Stampa il testo del paragrafo
+                    });
+                    if(testo!==""){
+                        array.push({titolo:titolo,testo:testo})
+                    }
+                });
+                if(array.length>0){
+                    res.send(array)
+                }else{
+                    if(p!==""){
+                        res.send([{titolo:"In generale",testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                    }else{
+                        res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+                    }
+                }
+                
+            })
+        }else{
+            res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+        }
     }).catch(error => {
         console.error('Errore durante la richiesta Overpass:', error);
     });
