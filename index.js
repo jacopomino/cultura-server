@@ -5,7 +5,9 @@ import {MongoClient,ObjectId} from "mongodb"
 import fileupload from "express-fileupload"
 import axios from "axios"
 import cheerio from "cheerio"
-import fetch from "node-fetch"
+import gTTS from "gtts"
+import fs from "fs"
+import path from "path"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
@@ -40,9 +42,9 @@ app.put("/wikiText", async (req,res)=>{
     if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
         nome=nome+" ("+info.city+")"
     }
-    axios.get("https://it.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
+    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
         if(e.data.query.search[0].pageid){
-            axios.get("https://it.wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
                 const array=[]
                 let primoH3
                 let h
@@ -67,14 +69,18 @@ app.put("/wikiText", async (req,res)=>{
                     p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                 });
                 if(p!==""){
-                    array.push({titolo:"In generale",testo:p})
+                    let titolo="In generale"
+                    if(info.lingua==="en"){
+                        titolo="In general"
+                    }
+                    array.push({titolo:titolo,testo:p})
                 }
                 h.each((index, element)=>{
                     let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                     let testo=""
                     const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
                     paragraphs.each((index, paragraph)=>{
-                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text(); // Stampa il testo del paragrafo
+                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
                     });
                     if(testo!==""){
                         array.push({titolo:titolo,testo:testo})
@@ -83,46 +89,59 @@ app.put("/wikiText", async (req,res)=>{
                 if(array.length>0){
                     res.send(array)
                 }else{
+                    let titolo="In generale"
+                    let testo="Non trovo informazioni a riguardo"
+                    if(info.lingua==="en"){
+                        titolo="In general"
+                        testo="I can't find any information about it"
+                    }
                     if(p!==""){
-                        res.send([{titolo:"In generale",testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                        res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
                     }else{
-                        res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+                        res.send([{titolo:titolo,testo:testo}])
                     }
                 }
                 
             })
         }else{
-            res.send([{titolo:"In generale",testo:"Non trovo informazioni a riguardo"}])
+            let titolo="In generale"
+            let testo="Non trovo informazioni a riguardo"
+            if(info.lingua==="en"){
+                titolo="In general"
+                testo="I can't find any information about it"
+            }
+            res.send([{titolo:titolo,testo:testo}])
         }
     }).catch(error => {
-        console.error('Errore durante la richiesta Overpass:', error);
+        let titolo="In generale"
+        let testo="Non trovo informazioni a riguardo"
+        if(info.lingua==="en"){
+            titolo="In general"
+            testo="I can't find any information about it"
+        }
+        res.send([{titolo:titolo,testo:testo}])
     });
 })
 app.put("/wikiAudio", async (req,res)=>{
     let info=req.body
-    const url = 'https://api.play.ht/api/v2/tts';
-    const options = {
-    method: 'POST',
-    headers: {
-        accept: 'text/event-stream',
-        'content-type': 'application/json',
-        AUTHORIZATION: '5b60e0c34c284a7fae4732462aaf2d10',
-        'X-USER-ID': 'Dzsr4BLOlmhX4aIpUUt9v6xKYdc2'
-    },
-    body: JSON.stringify({
-        text: info.testo,
-        voice: 's3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json',
-        quality: 'draft',
-        output_format: 'mp3',
-        speed: 1,
-        sample_rate: 24000,
-        seed: null,
-        temperature: null,
-        voice_engine: 'PlayHT2.0',
-        emotion: 'female_happy',
-        voice_guidance: 3,
-        style_guidance: 20
+    fs.access(path.resolve('Voice.mp3'),fs.constants.F_OK,err=>{
+        if (!err){
+            fs.unlink(path.resolve('Voice.mp3'), (err) => {
+                if (err) {
+                    console.log(err);
+                }
+            });
+        }
     })
-    };
-fetch(url, options).then(res => res.json()).then(json => res.send(json)).catch(err => console.error('error:' + err));
+    const combinedSpeech =new gTTS(info.titolo+". "+info.testo, info.lingua);
+    combinedSpeech.save('Voice.mp3', function (err, result){
+        if(err){ 
+            res.status(203).send(err);
+        }else{
+            res.send("audio/"+Math.random())
+        }
+    });
+})
+app.get("/audio/:id", async (req,res)=>{
+    res.sendFile(path.resolve('Voice.mp3'))
 })
