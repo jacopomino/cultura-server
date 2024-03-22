@@ -42,9 +42,20 @@ app.put("/wikiText", async (req,res)=>{
     if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
         nome=nome+" ("+info.city+")"
     }
-    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
-        if(e.data.query.search[0].pageid){
-            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[0].pageid).then(i=>{
+    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome+" (Monza)").then(e=>{
+        let parolaPiùSimile;
+        let massimaSimilitudine = 0;
+        let countParolaPiùSimile=0
+        e.data.query.search.forEach((parola,count) => {
+            const similitudine=similarity(nome, parola.title);
+            if (similitudine>massimaSimilitudine) {
+                massimaSimilitudine=similitudine;
+                parolaPiùSimile = parola;
+                countParolaPiùSimile=count
+            }
+        });
+        if(e.data.query.search[countParolaPiùSimile].pageid){
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[countParolaPiùSimile].pageid).then(i=>{
                 const array=[]
                 let primoH3
                 let h
@@ -113,6 +124,7 @@ app.put("/wikiText", async (req,res)=>{
             res.send([{titolo:titolo,testo:testo}])
         }
     }).catch(error => {
+        console.log(error);
         let titolo="In generale"
         let testo="Non trovo informazioni a riguardo"
         if(info.lingua==="en"){
@@ -145,3 +157,40 @@ app.put("/wikiAudio", async (req,res)=>{
 app.get("/audio/:id", async (req,res)=>{
     res.sendFile(path.resolve('Voice.mp3'))
 })
+
+//funzioni utili
+function similarity(s1, s2) {
+    const longer = s1.length > s2.length ? s1 : s2;
+    const shorter = s1.length > s2.length ? s2 : s1;
+    const longerLength = longer.length;
+    if (longerLength === 0) {
+        return 1.0;
+    }
+    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+}
+
+function editDistance(s1, s2) {
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+
+    let costs = [];
+    for (let i = 0; i <= s1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= s2.length; j++) {
+            if (i === 0)
+                costs[j] = j;
+            else {
+                if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+        }
+        if (i > 0)
+            costs[s2.length] = lastValue;
+    }
+    return costs[s2.length];
+}
