@@ -194,3 +194,48 @@ function editDistance(s1, s2) {
     }
     return costs[s2.length];
 }
+app.put("/sendEmail", async (req,res)=>{
+    let info=req.body
+    let countError=0
+    let error="you have not filled in the field: "
+    if(info.email===""){
+        countError++
+        error=error+"email, "
+    }
+    if(info.oggetto===""){
+        countError++
+        error=error+"object, "
+    }
+    if(info.testo===""){
+        countError++
+        error=error+"text, "
+    }
+    if(countError>0){
+        res.status(203).send(error)
+    }else{
+        const trasportatore=nodemailer.createTransport({
+            service:'gmail', // Puoi specificare il servizio di posta elettronica che stai utilizzando (es. 'gmail', 'hotmail', 'yahoo', ecc.)
+            auth:{
+                user:'nolomundus@gmail.com', // Inserisci il tuo indirizzo email
+                pass:'rclh ruyt cxmy agpk' // Inserisci la tua password
+            },
+            tls:{
+                rejectUnauthorized:false
+            }
+        });
+        const opzioniEmail={
+            from:info.email, // Inserisci il mittente
+            to:'nolomundus@gmail.com', // Inserisci il destinatario
+            subject:info.oggetto,
+            text:info.email+", "+info.testo // Testo del messaggio
+        };
+        trasportatore.sendMail(opzioniEmail, function(error, info){
+            if(error){
+                console.log(error);
+                res.status(203).send(error);
+            }else{
+                res.send("ok");
+            }
+        });
+    }
+})
