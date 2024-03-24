@@ -43,7 +43,7 @@ app.put("/wikiText", async (req,res)=>{
     if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
         nome=nome+" ("+info.city+")"
     }
-    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome+" (Monza)").then(e=>{
+    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
         let parolaPiùSimile;
         let massimaSimilitudine = 0;
         let countParolaPiùSimile=0
