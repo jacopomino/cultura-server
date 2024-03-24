@@ -8,6 +8,7 @@ import cheerio from "cheerio"
 import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
+import nodemailer from "nodemailer"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
