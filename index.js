@@ -8,7 +8,6 @@ import cheerio from "cheerio"
 import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
-import nodemailer from "nodemailer"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
@@ -55,7 +54,7 @@ app.put("/wikiText", async (req,res)=>{
                 countParolaPiùSimile=count
             }
         });
-        if(e.data.query.search[countParolaPiùSimile].pageid){
+        if(massimaSimilitudine>0.5&&e.data.query.search[countParolaPiùSimile].pageid){
             axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[countParolaPiùSimile].pageid).then(i=>{
                 const array=[]
                 let primoH3
