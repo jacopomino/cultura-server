@@ -43,20 +43,9 @@ app.put("/wikiText", async (req,res)=>{
     if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
         nome=nome+" ("+info.city+")"
     }
-    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch="+nome).then(e=>{
-        let parolaPiùSimile;
-        let massimaSimilitudine = 0;
-        let countParolaPiùSimile=0
-        e.data.query.search.forEach((parola,count) => {
-            const similitudine=similarity(nome, parola.title);
-            if (similitudine>massimaSimilitudine) {
-                massimaSimilitudine=similitudine;
-                parolaPiùSimile = parola;
-                countParolaPiùSimile=count
-            }
-        });
-        if(massimaSimilitudine>0.5&&e.data.query.search[countParolaPiùSimile].pageid){
-            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.search[countParolaPiùSimile].pageid).then(i=>{
+    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+nome).then(e=>{
+        if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
                 const array=[]
                 let primoH3
                 let h
@@ -124,16 +113,7 @@ app.put("/wikiText", async (req,res)=>{
             }
             res.send([{titolo:titolo,testo:testo}])
         }
-    }).catch(error => {
-        console.log(error);
-        let titolo="In generale"
-        let testo="Non trovo informazioni a riguardo"
-        if(info.lingua==="en"){
-            titolo="In general"
-            testo="I can't find any information about it"
-        }
-        res.send([{titolo:titolo,testo:testo}])
-    });
+    })
 })
 app.put("/wikiAudio", async (req,res)=>{
     let info=req.body
