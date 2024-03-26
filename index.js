@@ -36,59 +36,71 @@ app.put("/wiki", async (req,res)=>{
 })
 app.put("/wikiText", async (req,res)=>{
     let info=req.body
-    let nome=info.nome
-    if(info.wikipedia){
-        nome=info.wikipedia.split(":")[1]
-    }
-    if(info.city&&!nome.includes("("+info.city+")")&&!nome.includes(info.city)){
-        nome=nome+" ("+info.city+")"
-    }
-    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+nome).then(e=>{
-        if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
-            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
-                const array=[]
-                let primoH3
-                let h
-                if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
-                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
-                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
-                    }else{
-                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
-                    }
-                    h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
-                }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
-                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
-                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
-                    }else{
-                        primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
-                    }
-                    h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
-                }
-                const paragrafo=primoH3.prevAll("p")
-                let p=""
-                paragrafo.each((index, element)=>{
-                    p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
-                });
-                if(p!==""){
-                    let titolo="In generale"
-                    if(info.lingua==="en"){
-                        titolo="In general"
-                    }
-                    array.push({titolo:titolo,testo:p})
-                }
-                h.each((index, element)=>{
-                    let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
-                    let testo=""
-                    const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
-                    paragraphs.each((index, paragraph)=>{
-                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
-                    });
-                    if(testo!==""){
-                        array.push({titolo:titolo,testo:testo})
-                    }
-                });
-                if(array.length>0){
-                    res.send(array)
+    if(info.wikidata){
+        const response = await axios.get(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks/urls&ids=${info.wikidata}`);
+        const obj=response.data.entities[Object.keys(response.data.entities)].sitelinks[info.lingua+"wiki"]
+        if(obj){
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+obj.title).then(e=>{
+                if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
+                    axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
+                        const array=[]
+                        let primoH3
+                        let h
+                        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
+                            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
+                                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
+                            }else{
+                                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
+                            }
+                            h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
+                        }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
+                            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
+                                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
+                            }else{
+                                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
+                            }
+                            h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
+                        }
+                        const paragrafo=primoH3.prevAll("p")
+                        let p=""
+                        paragrafo.each((index, element)=>{
+                            p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
+                        });
+                        if(p!==""){
+                            let titolo="In generale"
+                            if(info.lingua==="en"){
+                                titolo="In general"
+                            }
+                            array.push({titolo:titolo,testo:p})
+                        }
+                        h.each((index, element)=>{
+                            let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                            let testo=""
+                            const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                            paragraphs.each((index, paragraph)=>{
+                                testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                            });
+                            if(testo!==""){
+                                array.push({titolo:titolo,testo:testo})
+                            }
+                        });
+                        if(array.length>0){
+                            res.send(array)
+                        }else{
+                            let titolo="In generale"
+                            let testo="Non trovo informazioni a riguardo"
+                            if(info.lingua==="en"){
+                                titolo="In general"
+                                testo="I can't find any information about it"
+                            }
+                            if(p!==""){
+                                res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                            }else{
+                                res.send([{titolo:titolo,testo:testo}])
+                            }
+                        }
+                        
+                    })
                 }else{
                     let titolo="In generale"
                     let testo="Non trovo informazioni a riguardo"
@@ -96,13 +108,8 @@ app.put("/wikiText", async (req,res)=>{
                         titolo="In general"
                         testo="I can't find any information about it"
                     }
-                    if(p!==""){
-                        res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
-                    }else{
-                        res.send([{titolo:titolo,testo:testo}])
-                    }
+                    res.send([{titolo:titolo,testo:testo}])
                 }
-                
             })
         }else{
             let titolo="In generale"
@@ -113,7 +120,79 @@ app.put("/wikiText", async (req,res)=>{
             }
             res.send([{titolo:titolo,testo:testo}])
         }
-    })
+    }else{
+        axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
+            if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
+                axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
+                    const array=[]
+                    let primoH3
+                    let h
+                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
+                        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
+                        }else{
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
+                        }
+                        h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
+                    }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
+                        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
+                        }else{
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
+                        }
+                        h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
+                    }
+                    const paragrafo=primoH3.prevAll("p")
+                    let p=""
+                    paragrafo.each((index, element)=>{
+                        p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
+                    });
+                    if(p!==""){
+                        let titolo="In generale"
+                        if(info.lingua==="en"){
+                            titolo="In general"
+                        }
+                        array.push({titolo:titolo,testo:p})
+                    }
+                    h.each((index, element)=>{
+                        let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                        let testo=""
+                        const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                        paragraphs.each((index, paragraph)=>{
+                            testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                        });
+                        if(testo!==""){
+                            array.push({titolo:titolo,testo:testo})
+                        }
+                    });
+                    if(array.length>0){
+                        res.send(array)
+                    }else{
+                        let titolo="In generale"
+                        let testo="Non trovo informazioni a riguardo"
+                        if(info.lingua==="en"){
+                            titolo="In general"
+                            testo="I can't find any information about it"
+                        }
+                        if(p!==""){
+                            res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                        }else{
+                            res.send([{titolo:titolo,testo:testo}])
+                        }
+                    }
+                    
+                })
+            }else{
+                let titolo="In generale"
+                let testo="Non trovo informazioni a riguardo"
+                if(info.lingua==="en"){
+                    titolo="In general"
+                    testo="I can't find any information about it"
+                }
+                res.send([{titolo:titolo,testo:testo}])
+            }
+        })
+    }
 })
 app.put("/wikiAudio", async (req,res)=>{
     let info=req.body
