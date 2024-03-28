@@ -18,6 +18,8 @@
     "express-fileupload": "^1.4.3",
     "fs": "^0.0.1-security",
     "gtts": "^0.2.1",
+    "lodash": "^4.17.21",
+    "lodash-node": "^3.10.2",
     "mongodb": "^6.4.0",
     "node-fetch": "^2.7.0",
     "node-summary": "^1.2.0",
