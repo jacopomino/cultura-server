@@ -9,7 +9,8 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
-import {summarize,summarizeFromUrl} from "node-summary"
+import pkg from 'node-summary';
+const {summarize} = pkg;
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
