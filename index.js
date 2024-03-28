@@ -66,22 +66,26 @@ app.put("/wikiText", async (req,res)=>{
                         paragrafo.each((index, element)=>{
                             p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                         });
+                        let summary=""
                         if(p!==""){
+                            summary=generateSummary(p)
                             let titolo="In generale"
                             if(info.lingua==="en"){
                                 titolo="In general"
                             }
-                            array.push({titolo:titolo,testo:p})
+                            array.push({titolo:titolo,testo:p,riassunto:summary})
                         }
                         h.each((index, element)=>{
                             let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                             let testo=""
+                            let summary=""
                             const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
                             paragraphs.each((index, paragraph)=>{
                                 testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
                             });
                             if(testo!==""){
-                                array.push({titolo:titolo,testo:testo})
+                                summary=generateSummary(testo)
+                                array.push({titolo:titolo,testo:testo,riassunto:summary})
                             }
                         });
                         if(array.length>0){
@@ -144,6 +148,7 @@ app.put("/wikiText", async (req,res)=>{
                     }
                     const paragrafo=primoH3.prevAll("p")
                     let p=""
+                    let summary=""
                     paragrafo.each((index, element)=>{
                         p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                     });
@@ -152,7 +157,8 @@ app.put("/wikiText", async (req,res)=>{
                         if(info.lingua==="en"){
                             titolo="In general"
                         }
-                        array.push({titolo:titolo,testo:p})
+                        summary=generateSummary(p)
+                        array.push({titolo:titolo,testo:p,riassunto:summary})
                     }
                     h.each((index, element)=>{
                         let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
@@ -161,8 +167,10 @@ app.put("/wikiText", async (req,res)=>{
                         paragraphs.each((index, paragraph)=>{
                             testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
                         });
+                        let summary=""
                         if(testo!==""){
-                            array.push({titolo:titolo,testo:testo})
+                            summary=generateSummary(p)
+                            array.push({titolo:titolo,testo:p,riassunto:summary})
                         }
                     });
                     if(array.length>0){
@@ -299,3 +307,32 @@ app.put("/sendEmail", async (req,res)=>{
         });
     }
 })
+function generateSummary(text, maxLength = 150) {
+    // Rimuovi i caratteri speciali e suddividi il testo in parole
+    const words = text.replace(/[^\w\s]/g, '').split(/\s+/);
+
+    // Calcola la frequenza delle parole
+    const wordFrequency = {};
+    words.forEach(word => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+    });
+
+    // Trova le parole più frequenti
+    const mostFrequentWords = Object.keys(wordFrequency).sort((a, b) => wordFrequency[b] - wordFrequency[a]);
+
+    // Seleziona le prime N parole più frequenti per il riassunto
+    const summaryWords = mostFrequentWords.slice(0, 20); // Esempio: seleziona le prime 20 parole più frequenti
+
+    // Costruisci il riassunto utilizzando le frasi contenenti le parole più frequenti
+    let summary = '';
+    const sentences = text.split(/[.!?]/);
+    sentences.some(sentence => {
+        const sentenceWords = sentence.replace(/[^\w\s]/g, '').split(/\s+/);
+        if (sentenceWords.some(word => summaryWords.includes(word))) {
+            summary += sentence.trim() + '. ';
+            return summary.length >= maxLength;
+        }
+    });
+
+    return summary.trim();
+}
