@@ -9,6 +9,7 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
+import {summarize,summarizeFromUrl} from "node-summary"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
@@ -63,6 +64,7 @@ app.put("/wikiText", async (req,res)=>{
                         }
                         const paragrafo=primoH3.prevAll("p")
                         let p=""
+                        let riassunto=""
                         paragrafo.each((index, element)=>{
                             p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                         });
@@ -71,17 +73,26 @@ app.put("/wikiText", async (req,res)=>{
                             if(info.lingua==="en"){
                                 titolo="In general"
                             }
-                            array.push({titolo:titolo,testo:p})
+                            summarize(titolo, p, function(err, summary) {
+                                if(err) console.log("Something went wrong man!");
+                                riassunto=(summary);
+                            });
+                            array.push({titolo:titolo,testo:p,riassunto:riassunto})
                         }
                         h.each((index, element)=>{
                             let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                             let testo=""
+                            let riassunto=""
                             const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
                             paragraphs.each((index, paragraph)=>{
                                 testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
                             });
                             if(testo!==""){
-                                array.push({titolo:titolo,testo:testo})
+                                summarize(titolo, testo, function(err, summary) {
+                                    if(err) console.log("Something went wrong man!");
+                                    riassunto=(summary);
+                                });
+                                array.push({titolo:titolo,testo:testo,riassunto:riassunto})
                             }
                         });
                         if(array.length>0){
@@ -144,6 +155,7 @@ app.put("/wikiText", async (req,res)=>{
                     }
                     const paragrafo=primoH3.prevAll("p")
                     let p=""
+                    let riassunto=""
                     paragrafo.each((index, element)=>{
                         p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                     });
@@ -152,17 +164,26 @@ app.put("/wikiText", async (req,res)=>{
                         if(info.lingua==="en"){
                             titolo="In general"
                         }
-                        array.push({titolo:titolo,testo:p})
+                        summarize(titolo, p, function(err, summary) {
+                            if(err) console.log("Something went wrong man!");
+                            riassunto=(summary);
+                        });
+                        array.push({titolo:titolo,testo:p,riassunto:riassunto})
                     }
                     h.each((index, element)=>{
                         let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                         let testo=""
+                        let riassunto=""
                         const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
                         paragraphs.each((index, paragraph)=>{
                             testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
                         });
                         if(testo!==""){
-                            array.push({titolo:titolo,testo:testo})
+                            summarize(titolo, testo, function(err, summary) {
+                                if(err) console.log("Something went wrong man!");
+                                riassunto=(summary);
+                            });
+                            array.push({titolo:titolo,testo:testo,riassunto:riassunto})
                         }
                     });
                     if(array.length>0){
@@ -180,7 +201,6 @@ app.put("/wikiText", async (req,res)=>{
                             res.send([{titolo:titolo,testo:testo}])
                         }
                     }
-                    
                 })
             }else{
                 let titolo="In generale"
@@ -217,43 +237,6 @@ app.put("/wikiAudio", async (req,res)=>{
 app.get("/audio/:id", async (req,res)=>{
     res.sendFile(path.resolve('Voice.mp3'))
 })
-
-//funzioni utili
-function similarity(s1, s2) {
-    const longer = s1.length > s2.length ? s1 : s2;
-    const shorter = s1.length > s2.length ? s2 : s1;
-    const longerLength = longer.length;
-    if (longerLength === 0) {
-        return 1.0;
-    }
-    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
-
-function editDistance(s1, s2) {
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
-
-    let costs = [];
-    for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-            if (i === 0)
-                costs[j] = j;
-            else {
-                if (j > 0) {
-                    let newValue = costs[j - 1];
-                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                    costs[j - 1] = lastValue;
-                    lastValue = newValue;
-                }
-            }
-        }
-        if (i > 0)
-            costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
-}
 app.put("/sendEmail", async (req,res)=>{
     let info=req.body
     let countError=0
