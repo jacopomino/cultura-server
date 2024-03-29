@@ -20,7 +20,7 @@ app.listen(PORT,()=>{
 })
 
 const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
-
+//l'utente ottiene la posizione delle attrazioni turistiche intorno all'utente
 app.put("/wiki", async (req,res)=>{
     let info=req.body
     const query = `
@@ -34,6 +34,19 @@ app.put("/wiki", async (req,res)=>{
         console.error('Errore durante la richiesta Overpass:', error);
     });
 })
+//l'utente ottiene i testi dell'attrazione turistica di interesse
+//errori possibili
+const error=(lingua,res)=>{
+    let titolo="In generale"
+    let testo="Non trovo informazioni a riguardo"
+    let summary="Non trovo informazioni a riguardo"
+    if(lingua==="en"){
+        titolo="In general"
+        testo="I can't find any information about it"
+        summary="I can't find any information about it"
+    }
+    res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+}
 app.put("/wikiText", async (req,res)=>{
     let info=req.body
     if(info.wikidata){
@@ -61,76 +74,52 @@ app.put("/wikiText", async (req,res)=>{
                             }
                             h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
                         }
-                        const paragrafo=primoH3.prevAll("p")
-                        let p=""
-                        paragrafo.each((index, element)=>{
-                            p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
-                        });
-                        let summary=""
-                        if(p!==""){
-                            summary=generateSummary(p)
-                            let titolo="In generale"
-                            let testo=p
-                            if(info.lingua==="en"){
-                                titolo="In general"
-                            }
-                            array.push({titolo:titolo,testo:testo,riassunto:summary})
-                        }
-                        h.each((index, element)=>{
-                            let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
-                            let testo=""
-                            let summary=""
-                            const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
-                            paragraphs.each((index, paragraph)=>{
-                                testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                        if(primoH3){
+                            const paragrafo=primoH3.prevAll("p")
+                            let p=""
+                            paragrafo.each((index, element)=>{
+                                p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
                             });
-                            if(testo!==""){
-                                summary=generateSummary(testo)
+                            let summary=""
+                            if(p!==""){
+                                summary=generateSummary(p)
+                                let titolo="In generale"
+                                let testo=p
+                                if(info.lingua==="en"){
+                                    titolo="In general"
+                                }
                                 array.push({titolo:titolo,testo:testo,riassunto:summary})
                             }
-                        });
-                        if(array.length>0){
-                            res.send(array)
-                        }else{
-                            let titolo="In generale"
-                            let testo="Non trovo informazioni a riguardo"
-                            let summary="Non trovo informazioni a riguardo"
-                            if(info.lingua==="en"){
-                                titolo="In general"
-                                testo="I can't find any information about it"
-                                summary="I can't find any information about it"
-                            }
-                            if(p!==""){
-                                summary=generateSummary(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text())
-                                res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text(),riassunto:summary}])
+                            h.each((index, element)=>{
+                                let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                                let testo=""
+                                let summary=""
+                                const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                                if(titolo!=="Notes"&&titolo!=="Note"&&titolo!=="Galleria d'immagini"&&titolo!=="Photo gallery"&&titolo!=="Voci correlate"&&titolo!=="References"&&titolo!=="Altri progetti"&&titolo!=="Collegamenti esterni"&&titolo!=="External links"&&titolo!=="See also"){
+                                    paragraphs.each((index, paragraph)=>{
+                                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                                    });
+                                    if(testo!==""){
+                                        summary=generateSummary(testo)
+                                        array.push({titolo:titolo,testo:testo,riassunto:summary})
+                                    }
+                                }
+                            });
+                            if(array.length>0){
+                                res.send(array)
                             }else{
-                                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+                                error(info.lingua,res)
                             }
+                        }else{
+                            error(info.lingua,res)
                         }
-                        
                     })
                 }else{
-                    let titolo="In generale"
-                    let testo="Non trovo informazioni a riguardo"
-                    let summary="Non trovo informazioni a riguardo"
-                    if(info.lingua==="en"){
-                        titolo="In general"
-                        testo="I can't find any information about it"
-                        summary="I can't find any information about it"
-                    }
-                    res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+                    error(info.lingua,res)
                 }
             })
         }else{
-            let titolo="In generale"
-                let testo="Non trovo informazioni a riguardo"
-                let summary="Non trovo informazioni a riguardo"
-                if(info.lingua==="en"){
-                    titolo="In general"
-                    testo="I can't find any information about it"
-                    summary="I can't find any information about it"
-                }
-                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+            error(info.lingua,res)
         }
     }else{
         //per le città
@@ -155,64 +144,48 @@ app.put("/wikiText", async (req,res)=>{
                         }
                         h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
                     }
-                    const paragrafo=primoH3.prevAll("p")
-                    let p=""
-                    let summary=""
-                    paragrafo.each((index, element)=>{
-                        p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
-                    });
-                    if(p!==""){
-                        let titolo="In generale"
-                        let testo=p
-                        if(info.lingua==="en"){
-                            titolo="In general"
-                        }
-                        summary=generateSummary(p)
-                        array.push({titolo:titolo,testo:testo,riassunto:summary})
-                    }
-                    h.each((index, element)=>{
-                        let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
-                        let testo=""
-                        const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
-                        paragraphs.each((index, paragraph)=>{
-                            testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
-                        });
+                    if(primoH3){
+                        const paragrafo=primoH3.prevAll("p")
+                        let p=""
                         let summary=""
-                        if(testo!==""){
+                        paragrafo.each((index, element)=>{
+                            p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
+                        });
+                        if(p!==""){
+                            let titolo="In generale"
+                            let testo=p
+                            if(info.lingua==="en"){
+                                titolo="In general"
+                            }
                             summary=generateSummary(p)
                             array.push({titolo:titolo,testo:testo,riassunto:summary})
                         }
-                    });
-                    if(array.length>0){
-                        res.send(array)
-                    }else{
-                        let titolo="In generale"
-                        let testo="Non trovo informazioni a riguardo"
-                        let summary="Non trovo informazioni a riguardo"
-                        if(info.lingua==="en"){
-                            titolo="In general"
-                            testo="I can't find any information about it"
-                            summary="I can't find any information about it"
-                        }
-                        if(p!==""){
-                            summary=generateSummary(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text())
-                            res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text(),riassunto:summary}])
+                        h.each((index, element)=>{
+                            let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                            let testo=""
+                            let summary=""
+                            const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                            if(titolo!=="Notes"&&titolo!=="Note"&&titolo!=="Galleria d'immagini"&&titolo!=="Photo gallery"&&titolo!=="Voci correlate"&&titolo!=="References"&&titolo!=="Altri progetti"&&titolo!=="Collegamenti esterni"&&titolo!=="External links"&&titolo!=="See also"){
+                                paragraphs.each((index, paragraph)=>{
+                                    testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                                });
+                                if(testo!==""){
+                                    summary=generateSummary(testo)
+                                    array.push({titolo:titolo,testo:testo,riassunto:summary})
+                                }
+                            }
+                        });
+                        if(array.length>0){
+                            res.send(array)
                         }else{
-                            res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+                            error(info.lingua,res)
                         }
+                    }else{
+                        error(info.lingua,res)
                     }
-                    
                 })
             }else{
-                let titolo="In generale"
-                let testo="Non trovo informazioni a riguardo"
-                let summary="Non trovo informazioni a riguardo"
-                if(info.lingua==="en"){
-                    titolo="In general"
-                    testo="I can't find any information about it"
-                    summary="I can't find any information about it"
-                }
-                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
+                error(info.lingua,res)
             }
         })
     }
@@ -292,21 +265,22 @@ function generateSummary(testo){
       map[parola] = (map[parola] || 0) + 1;
       return map;
     }, {});
-  
-    const punteggioFrasi = frasi.map(frase => {
-      let punteggio = 0;
-      const paroleFrase = frase.split(/\W+/);
-      paroleFrase.forEach(parola => {
-        punteggio += frequenzaParole[parola] || 0;
-      });
-      return { frase, punteggio };
-    });
-  
-    const riassunto = punteggioFrasi
-      .sort((a, b) => b.punteggio - a.punteggio)
-      .slice(0, Math.ceil(frasi.length / 4))
-      .map(item => item.frase)
-      .join(' ');
+    let riassunto=""
+    if (frasi){
+        const punteggioFrasi = frasi&&frasi.map(frase => {
+        let punteggio = 0;
+        const paroleFrase = frase.split(/\W+/);
+        paroleFrase.forEach(parola => {
+            punteggio += frequenzaParole[parola] || 0;
+        });
+        return { frase, punteggio };
+        });
+        riassunto = punteggioFrasi
+        .sort((a, b) => b.punteggio - a.punteggio)
+        .slice(0, Math.ceil(frasi.length / 4))
+        .map(item => item.frase)
+        .join(' ');
+    }
   
     return riassunto;
 }
