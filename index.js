@@ -70,10 +70,11 @@ app.put("/wikiText", async (req,res)=>{
                         if(p!==""){
                             summary=generateSummary(p)
                             let titolo="In generale"
+                            let testo=p
                             if(info.lingua==="en"){
                                 titolo="In general"
                             }
-                            array.push({titolo:titolo,testo:p,riassunto:summary})
+                            array.push({titolo:titolo,testo:testo,riassunto:summary})
                         }
                         h.each((index, element)=>{
                             let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
@@ -162,11 +163,12 @@ app.put("/wikiText", async (req,res)=>{
                     });
                     if(p!==""){
                         let titolo="In generale"
+                        let testo=p
                         if(info.lingua==="en"){
                             titolo="In general"
                         }
                         summary=generateSummary(p)
-                        array.push({titolo:titolo,testo:p,riassunto:summary})
+                        array.push({titolo:titolo,testo:testo,riassunto:summary})
                     }
                     h.each((index, element)=>{
                         let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
@@ -178,7 +180,7 @@ app.put("/wikiText", async (req,res)=>{
                         let summary=""
                         if(testo!==""){
                             summary=generateSummary(p)
-                            array.push({titolo:titolo,testo:p,riassunto:summary})
+                            array.push({titolo:titolo,testo:testo,riassunto:summary})
                         }
                     });
                     if(array.length>0){
