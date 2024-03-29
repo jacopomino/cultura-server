@@ -90,6 +90,8 @@ app.put("/wikiText", async (req,res)=>{
                                 }
                                 array.push({titolo:titolo,testo:testo,riassunto:summary})
                             }
+                        }
+                        if(h){
                             h.each((index, element)=>{
                                 let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                                 let testo=""
@@ -121,8 +123,75 @@ app.put("/wikiText", async (req,res)=>{
         }else{
             error(info.lingua,res)
         }
+    }else if(info.lat&&info.lon){
+        axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
+            if(e.data.query.geosearch[0].pageid){
+                axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.geosearch[0].pageid).then(i=>{
+                    const array=[]
+                    let primoH3
+                    let h
+                    if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
+                        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
+                        }else{
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
+                        }
+                        h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
+                    }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
+                        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
+                        }else{
+                            primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
+                        }
+                        h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
+                    }
+                    if(primoH3){
+                        const paragrafo=primoH3.prevAll("p")
+                        let p=""
+                        let summary=""
+                        paragrafo.each((index, element)=>{
+                            p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
+                        });
+                        if(p!==""){
+                            let titolo="In generale"
+                            let testo=p
+                            if(info.lingua==="en"){
+                                titolo="In general"
+                            }
+                            summary=generateSummary(p)
+                            array.push({titolo:titolo,testo:testo,riassunto:summary})
+                        }
+                    }
+                    if(h){
+                        h.each((index, element)=>{
+                            let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
+                            let testo=""
+                            let summary=""
+                            const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
+                            if(titolo!=="Notes"&&titolo!=="Note"&&titolo!=="Galleria d'immagini"&&titolo!=="Photo gallery"&&titolo!=="Voci correlate"&&titolo!=="References"&&titolo!=="Altri progetti"&&titolo!=="Collegamenti esterni"&&titolo!=="External links"&&titolo!=="See also"){
+                                paragraphs.each((index, paragraph)=>{
+                                    testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
+                                });
+                                if(testo!==""){
+                                    summary=generateSummary(testo)
+                                    array.push({titolo:titolo,testo:testo,riassunto:summary})
+                                }
+                            }
+                        });
+                        if(array.length>0){
+                            res.send(array)
+                        }else{
+                            error(info.lingua,res)
+                        }
+                    }else{
+                        error(info.lingua,res)
+                    }
+                })
+            }else{
+                error(info.lingua,res)
+            }
+        })
     }else{
-        //per le città
         axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
             if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
                 axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
@@ -160,6 +229,8 @@ app.put("/wikiText", async (req,res)=>{
                             summary=generateSummary(p)
                             array.push({titolo:titolo,testo:testo,riassunto:summary})
                         }
+                    }
+                    if(h){
                         h.each((index, element)=>{
                             let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
                             let testo=""
