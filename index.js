@@ -93,14 +93,17 @@ app.put("/wikiText", async (req,res)=>{
                         }else{
                             let titolo="In generale"
                             let testo="Non trovo informazioni a riguardo"
+                            let summary="Non trovo informazioni a riguardo"
                             if(info.lingua==="en"){
                                 titolo="In general"
                                 testo="I can't find any information about it"
+                                summary="I can't find any information about it"
                             }
                             if(p!==""){
-                                res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                                summary=generateSummary(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text())
+                                res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text(),riassunto:summary}])
                             }else{
-                                res.send([{titolo:titolo,testo:testo}])
+                                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
                             }
                         }
                         
@@ -108,23 +111,28 @@ app.put("/wikiText", async (req,res)=>{
                 }else{
                     let titolo="In generale"
                     let testo="Non trovo informazioni a riguardo"
+                    let summary="Non trovo informazioni a riguardo"
                     if(info.lingua==="en"){
                         titolo="In general"
                         testo="I can't find any information about it"
+                        summary="I can't find any information about it"
                     }
-                    res.send([{titolo:titolo,testo:testo}])
+                    res.send([{titolo:titolo,testo:testo,riassunto:summary}])
                 }
             })
         }else{
             let titolo="In generale"
-            let testo="Non trovo informazioni a riguardo"
-            if(info.lingua==="en"){
-                titolo="In general"
-                testo="I can't find any information about it"
-            }
-            res.send([{titolo:titolo,testo:testo}])
+                let testo="Non trovo informazioni a riguardo"
+                let summary="Non trovo informazioni a riguardo"
+                if(info.lingua==="en"){
+                    titolo="In general"
+                    testo="I can't find any information about it"
+                    summary="I can't find any information about it"
+                }
+                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
         }
     }else{
+        //per le città
         axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
             if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
                 axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid).then(i=>{
@@ -178,14 +186,17 @@ app.put("/wikiText", async (req,res)=>{
                     }else{
                         let titolo="In generale"
                         let testo="Non trovo informazioni a riguardo"
+                        let summary="Non trovo informazioni a riguardo"
                         if(info.lingua==="en"){
                             titolo="In general"
                             testo="I can't find any information about it"
+                            summary="I can't find any information about it"
                         }
                         if(p!==""){
-                            res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text()}])
+                            summary=generateSummary(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text())
+                            res.send([{titolo:titolo,testo:cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text(),riassunto:summary}])
                         }else{
-                            res.send([{titolo:titolo,testo:testo}])
+                            res.send([{titolo:titolo,testo:testo,riassunto:summary}])
                         }
                     }
                     
@@ -193,11 +204,13 @@ app.put("/wikiText", async (req,res)=>{
             }else{
                 let titolo="In generale"
                 let testo="Non trovo informazioni a riguardo"
+                let summary="Non trovo informazioni a riguardo"
                 if(info.lingua==="en"){
                     titolo="In general"
                     testo="I can't find any information about it"
+                    summary="I can't find any information about it"
                 }
-                res.send([{titolo:titolo,testo:testo}])
+                res.send([{titolo:titolo,testo:testo,riassunto:summary}])
             }
         })
     }
@@ -225,43 +238,6 @@ app.put("/wikiAudio", async (req,res)=>{
 app.get("/audio/:id", async (req,res)=>{
     res.sendFile(path.resolve('Voice.mp3'))
 })
-
-//funzioni utili
-function similarity(s1, s2) {
-    const longer = s1.length > s2.length ? s1 : s2;
-    const shorter = s1.length > s2.length ? s2 : s1;
-    const longerLength = longer.length;
-    if (longerLength === 0) {
-        return 1.0;
-    }
-    return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
-}
-
-function editDistance(s1, s2) {
-    s1 = s1.toLowerCase();
-    s2 = s2.toLowerCase();
-
-    let costs = [];
-    for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-            if (i === 0)
-                costs[j] = j;
-            else {
-                if (j > 0) {
-                    let newValue = costs[j - 1];
-                    if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                        newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                    costs[j - 1] = lastValue;
-                    lastValue = newValue;
-                }
-            }
-        }
-        if (i > 0)
-            costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
-}
 app.put("/sendEmail", async (req,res)=>{
     let info=req.body
     let countError=0
@@ -307,32 +283,28 @@ app.put("/sendEmail", async (req,res)=>{
         });
     }
 })
-function generateSummary(text, maxLength = 150) {
-    // Rimuovi i caratteri speciali e suddividi il testo in parole
-    const words = text.replace(/[^\w\s]/g, '').split(/\s+/);
-
-    // Calcola la frequenza delle parole
-    const wordFrequency = {};
-    words.forEach(word => {
-        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+function generateSummary(testo){
+    const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
+    const parole = testo.split(/\W+/);
+    const frequenzaParole = parole.reduce((map, parola) => {
+      map[parola] = (map[parola] || 0) + 1;
+      return map;
+    }, {});
+  
+    const punteggioFrasi = frasi.map(frase => {
+      let punteggio = 0;
+      const paroleFrase = frase.split(/\W+/);
+      paroleFrase.forEach(parola => {
+        punteggio += frequenzaParole[parola] || 0;
+      });
+      return { frase, punteggio };
     });
-
-    // Trova le parole più frequenti
-    const mostFrequentWords = Object.keys(wordFrequency).sort((a, b) => wordFrequency[b] - wordFrequency[a]);
-
-    // Seleziona le prime N parole più frequenti per il riassunto
-    const summaryWords = mostFrequentWords.slice(0, 20); // Esempio: seleziona le prime 20 parole più frequenti
-
-    // Costruisci il riassunto utilizzando le frasi contenenti le parole più frequenti
-    let summary = '';
-    const sentences = text.split(/[.!?]/);
-    sentences.some(sentence => {
-        const sentenceWords = sentence.replace(/[^\w\s]/g, '').split(/\s+/);
-        if (sentenceWords.some(word => summaryWords.includes(word))) {
-            summary += sentence.trim() + '. ';
-            return summary.length >= maxLength;
-        }
-    });
-
-    return summary.trim();
+  
+    const riassunto = punteggioFrasi
+      .sort((a, b) => b.punteggio - a.punteggio)
+      .slice(0, Math.ceil(frasi.length / 4))
+      .map(item => item.frase)
+      .join(' ');
+  
+    return riassunto;
 }
