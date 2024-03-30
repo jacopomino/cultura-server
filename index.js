@@ -50,6 +50,7 @@ const error=(lingua,res)=>{
 //funzione per ottenere il testo in base alla pagina da analizzare
 const text=(url,res,lingua)=>{
     axios.get(url).then(i=>{
+        const img=cheerio.load(i.data.parse.text["*"])("img")[0].attribs.src
         const array=[]
         let primoH3
         let h
@@ -82,7 +83,7 @@ const text=(url,res,lingua)=>{
                 if(lingua==="en"){
                     titolo="In general"
                 }
-                array.push({titolo:titolo,testo:testo,riassunto:summary})
+                array.push({titolo:titolo,testo:testo,riassunto:summary,img:img})
             }
         }
         if(h){
@@ -97,7 +98,7 @@ const text=(url,res,lingua)=>{
                     });
                     if(testo!==""){
                         summary=generateSummary(testo)
-                        array.push({titolo:titolo,testo:testo,riassunto:summary})
+                        array.push({titolo:titolo,testo:testo,riassunto:summary,img:img})
                     }
                 }
             });
