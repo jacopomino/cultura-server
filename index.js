@@ -50,7 +50,10 @@ const error=(lingua,res)=>{
 //funzione per ottenere il testo in base alla pagina da analizzare
 const text=(url,res,lingua)=>{
     axios.get(url).then(i=>{
-        const img=cheerio.load(i.data.parse.text["*"])("img")[0].attribs.src
+        const img=[]
+        cheerio.load(i.data.parse.text["*"])("img").map((i,n)=>{
+            n.attribs.src.match(/\b\d{3}px\b/)&&img.push("https:"+n.attribs.src)
+        })
         const array=[]
         let primoH3
         let h
