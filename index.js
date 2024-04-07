@@ -22,7 +22,8 @@ const connection = mysql.createConnection({
     host:"3.125.183.140",
     user:"root",
     password:"Jac2001Min!",
-    database:"gita"
+    database:"gita",
+    connectTimeout: 10000
 });
 const createTableQuery = `
 CREATE TABLE IF NOT EXISTS utente (
