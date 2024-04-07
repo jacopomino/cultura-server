@@ -19,7 +19,7 @@ app.listen(PORT,()=>{
     console.log("run");
 })
 const connection = mysql.createConnection({
-    host:"3.125.183.140",
+    host:"3.75.158.163",
     user:"root",
     password:"Jac2001Min!",
     database:"gita",
