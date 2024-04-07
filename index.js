@@ -8,7 +8,7 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
-import mysql from "mysql2"
+import {MongoClient,ObjectId} from "mongodb"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
@@ -18,12 +18,14 @@ app.use(bodyParser.urlencoded({extended:true}))
 app.listen(PORT,()=>{
     console.log("run");
 })
+const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
+/*import mysql from "mysql2"
 const connection = mysql.createConnection({
-    host:"3.75.158.163",
+    host:"127.0.0.1",
+    //host:"3.75.158.163",
     user:"root",
     password:"Jac2001Min!",
-    database:"gita",
-    connectTimeout: 10000
+    database:"gita"
 });
 const createTableQuery = `
 CREATE TABLE IF NOT EXISTS utente (
@@ -40,7 +42,7 @@ connection.query(createTableQuery, (error, results) => {
         return;
     }
     console.log('Tabella creata o già esistente');
-});
+});*/
 //l'utente ottiene la posizione delle attrazioni turistiche intorno all'utente
 app.put("/wiki", async (req,res)=>{
     let info=req.body
@@ -240,14 +242,21 @@ app.put("/sendEmail", async (req,res)=>{
 })
 app.put("/signup", async (req,res)=>{
     let info=req.body
-    const userData = {
-        email: info.email,
-        password: info.password,
-        nome: info.nome,
-        professione: info.professione,
-        nascita: info.nascita
-    };
-    const insertQuery = `
+    console.log(info);
+    client.db("gita").collection("user").findOne({email:info.email}).then(e=>{
+        if(e){
+            res.status(203).send('Email already used');
+        }else{
+            client.db("gita").collection("user").insertOne(info).then(i=>{
+                if(!i){
+                    res.status(203).send("The procedure did not take place correctly")
+                }else{
+                    res.send(info)
+                }
+            })
+        }
+    })
+    /*const insertQuery = `
         INSERT INTO utente (email, password, nome, professione, nascita)
         VALUES (?, ?, ?, ?, ?)
     `;
@@ -256,11 +265,18 @@ app.put("/signup", async (req,res)=>{
             res.status(203).send('Email already used');
         }
         res.send(userData)
-    });
+    });*/
 })
 app.put("/login", async (req,res)=>{
     let info=req.body
-    const userData = {
+    client.db("gita").collection("user").findOne({password:info.password,email:info.email}).then(e=>{
+        if(e){
+            res.send(e)
+        }else{
+            res.status(203).send('Unregistered user');
+        }
+    })
+    /*const userData = {
         email: info.email,
         password: info.password,
     };
@@ -278,11 +294,18 @@ app.put("/login", async (req,res)=>{
         }else{
             res.status(203).send('Unregistered user');
         }
-    });
+    });*/
 })
 app.put("/delete", async (req,res)=>{
     let info=req.body
-    const userData = {
+    client.db("gita").collection("user").deleteOne({password:info.password,email:info.email}).then(e=>{
+        if(e){
+            res.send("ok")
+        }else{
+            res.status(203).send('Error searching for user');
+        }
+    })
+    /*const userData = {
         email: info.email,
         password: info.password,
     };
@@ -298,7 +321,7 @@ app.put("/delete", async (req,res)=>{
         if(results.length>0){
             res.send("ok")
         }
-    });
+    });*/
 })
 function generateSummary(testo){
     const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
