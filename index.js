@@ -1,7 +1,6 @@
 import cors from "cors"
 import express from "express"
 import bodyParser from "body-parser"
-import {MongoClient,ObjectId} from "mongodb"
 import fileupload from "express-fileupload"
 import axios from "axios"
 import cheerio from "cheerio"
@@ -9,6 +8,7 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
+import mysql from "mysql2"
 
 const PORT = process.env.PORT|| 3001;
 const app=express()
@@ -18,8 +18,28 @@ app.use(bodyParser.urlencoded({extended:true}))
 app.listen(PORT,()=>{
     console.log("run");
 })
-
-const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
+const connection = mysql.createConnection({
+    host:"127.0.0.1",
+    user:"root",
+    password:"Jac2001Min!",
+    database:"gita"
+});
+const createTableQuery = `
+CREATE TABLE IF NOT EXISTS utente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE,
+    password VARCHAR(255),
+    nome VARCHAR(100),
+    professione VARCHAR(100),
+    nascita DATE
+)`;
+connection.query(createTableQuery, (error, results) => {
+    if (error) {
+        console.error('Errore durante la creazione della tabella',error);
+        return;
+    }
+    console.log('Tabella creata o già esistente');
+});
 //l'utente ottiene la posizione delle attrazioni turistiche intorno all'utente
 app.put("/wiki", async (req,res)=>{
     let info=req.body
@@ -217,6 +237,68 @@ app.put("/sendEmail", async (req,res)=>{
         });
     }
 })
+app.put("/signup", async (req,res)=>{
+    let info=req.body
+    const userData = {
+        email: info.email,
+        password: info.password,
+        nome: info.nome,
+        professione: info.professione,
+        nascita: info.nascita
+    };
+    const insertQuery = `
+        INSERT INTO utente (email, password, nome, professione, nascita)
+        VALUES (?, ?, ?, ?, ?)
+    `;
+    connection.query(insertQuery, [userData.email, userData.password, userData.nome, userData.professione, userData.nascita], (error, results) => {
+        if (error) {
+            res.status(203).send('Email already used');
+        }
+        res.send(userData)
+    });
+})
+app.put("/login", async (req,res)=>{
+    let info=req.body
+    const userData = {
+        email: info.email,
+        password: info.password,
+    };
+    const selectUserQuery = `
+        SELECT *
+        FROM utente
+        WHERE email = ? AND password = ?
+    `;
+    connection.query(selectUserQuery, [userData.email, userData.password], (error, results, fields) => {
+        if (error) {
+            res.status(203).send('Error searching for user');
+        }
+        if(results.length>0){
+            res.send(results[0])
+        }else{
+            res.status(203).send('Unregistered user');
+        }
+    });
+})
+app.put("/delete", async (req,res)=>{
+    let info=req.body
+    const userData = {
+        email: info.email,
+        password: info.password,
+    };
+    const selectUserQuery = `
+        DELETE
+        FROM utente
+        WHERE email = ? AND password = ?
+    `;
+    connection.query(selectUserQuery, [userData.email, userData.password], (error, results, fields) => {
+        if (error) {
+            res.status(203).send('Error searching for user');
+        }
+        if(results.length>0){
+            res.send("ok")
+        }
+    });
+})
 function generateSummary(testo){
     const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
     const parole = testo.split(/\W+/);
@@ -240,6 +322,5 @@ function generateSummary(testo){
         .map(item => item.frase)
         .join(' ');
     }
-  
     return riassunto;
 }
