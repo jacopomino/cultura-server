@@ -60,11 +60,15 @@ if (cluster.isMaster){
         let info=req.body
         const query = `
         [out:json];
+        (
         nwr["tourism"="attraction"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["tourism"="museum"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["tourism"="artwork"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        );
         out geom;
         `
         axios.post('https://overpass-api.de/api/interpreter', query).then(response => {
-            res.send(response.data.elements);
+            res.send(response.data.elements.filter(i=>i.tags.name));
         }).catch(error => {
             console.error('Errore durante la richiesta Overpass:', error);
         });
