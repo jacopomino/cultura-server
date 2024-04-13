@@ -172,7 +172,7 @@ if (cluster.isMaster){
             }
         }else if(info.lat&&info.lon){
             axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
-                if(e.data.query.geosearch[0].pageid){
+                if(e.data.query.geosearch[0]){
                     text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.geosearch[0].pageid,res,info.lingua)
                 }else{
                     error(info.lingua,res)
