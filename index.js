@@ -17,7 +17,7 @@ app.use(cors())
 app.use(fileupload());
 app.use(bodyParser.urlencoded({extended:true}))
 
-if(cluster.isMaster){
+/*if(cluster.isMaster){
     const numCPUs = os.cpus().length;
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
@@ -26,7 +26,7 @@ if(cluster.isMaster){
       console.log(`Worker ${worker.process.pid} died`);
       cluster.fork();
     });
-}else{
+}else{*/
     const PORT = process.env.PORT|| 3001;
     app.listen(PORT,()=>{
         console.log("run");
@@ -371,4 +371,4 @@ if(cluster.isMaster){
         }
         return riassunto.trim();
     }
-}
+//}
