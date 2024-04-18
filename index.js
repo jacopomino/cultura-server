@@ -12,7 +12,12 @@ import {MongoClient} from "mongodb"
 import cluster from 'cluster';
 import os from 'os';
 
-if (cluster.isMaster){
+const app=express()
+app.use(cors())
+app.use(fileupload());
+app.use(bodyParser.urlencoded({extended:true}))
+
+if(cluster.isMaster){
     const numCPUs = os.cpus().length;
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
@@ -23,14 +28,6 @@ if (cluster.isMaster){
     });
 }else{
     const PORT = process.env.PORT|| 3001;
-    const app=express()
-    app.use(cors())
-    app.use(fileupload());
-    app.use(bodyParser.urlencoded({extended:true}))
-    app.use((req, res, next) => {
-        res.setHeader('Access-Control-Allow-Origin', 'https://gita-483c7.web.app');
-        next();
-    });
     app.listen(PORT,()=>{
         console.log("run");
     })
