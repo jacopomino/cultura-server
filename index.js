@@ -8,7 +8,7 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
-import {MongoClient,ObjectId} from "mongodb"
+import {MongoClient} from "mongodb"
 import cluster from 'cluster';
 import os from 'os';
 
@@ -342,25 +342,32 @@ if (cluster.isMaster){
         const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
         const parole = testo.split(/\W+/);
         const frequenzaParole = parole.reduce((map, parola) => {
-        map[parola] = (map[parola] || 0) + 1;
-        return map;
+            map[parola] = (map[parola] || 0) + 1;
+            return map;
         }, {});
-        let riassunto=""
-        if (frasi){
-            const punteggioFrasi = frasi&&frasi.map(frase => {
-            let punteggio = 0;
-            const paroleFrase = frase.split(/\W+/);
-            paroleFrase.forEach(parola => {
-                punteggio += frequenzaParole[parola] || 0;
+        let riassunto = "";
+        if (frasi) {
+            const punteggioFrasi = frasi && frasi.map(frase => {
+                let punteggio = 0;
+                const paroleFrase = frase.split(/\W+/);
+                paroleFrase.forEach(parola => {
+                    punteggio += frequenzaParole[parola] || 0;
+                });
+                return { frase, punteggio };
             });
-            return { frase, punteggio };
-            });
-            riassunto = punteggioFrasi
-            .sort((a, b) => b.punteggio - a.punteggio)
-            .slice(0, Math.ceil(frasi.length / 4))
-            .map(item => item.frase)
-            .join(' ');
+            punteggioFrasi.sort((a, b) => b.punteggio - a.punteggio);
+
+            let paroleRiassunto = 0;
+            let i = 0;
+            while (paroleRiassunto < 100 && i < punteggioFrasi.length) {
+                const paroleFrase = punteggioFrasi[i].frase.split(/\W+/);
+                if (paroleRiassunto + paroleFrase.length <= 100) {
+                    riassunto += punteggioFrasi[i].frase + ' ';
+                    paroleRiassunto += paroleFrase.length;
+                }
+                i++;
+            }
         }
-        return riassunto;
+        return riassunto.trim();
     }
 }
