@@ -27,6 +27,10 @@ if (cluster.isMaster){
     app.use(cors())
     app.use(fileupload());
     app.use(bodyParser.urlencoded({extended:true}))
+    app.use((req, res, next) => {
+        res.setHeader('Access-Control-Allow-Origin', 'https://gita-483c7.web.app');
+        next();
+    });
     app.listen(PORT,()=>{
         console.log("run");
     })
