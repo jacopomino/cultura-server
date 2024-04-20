@@ -74,6 +74,24 @@ app.use(bodyParser.urlencoded({extended:true}))
             console.error('Errore durante la richiesta Overpass:', error);
         });
     })
+    app.put("/wikiBound", async (req,res)=>{
+        let info=req.body
+        const bbox=info.latSw+","+info.lonSw+","+info.latNe+","+info.lonNe
+        const query = `
+        [out:json];
+        (
+            nwr["tourism"="attraction"](${bbox});
+            nwr["tourism"="museum"](${bbox});
+            nwr["tourism"="artwork"](${bbox});
+        );
+        out geom;
+        `
+        axios.post('https://overpass-api.de/api/interpreter', query).then(response => {
+            res.send(response.data.elements.filter(i=>i.tags.name));
+        }).catch(error => {
+            console.error('Errore durante la richiesta Overpass:', error);
+        });
+    })
     //l'utente ottiene i testi dell'attrazione turistica di interesse
     //funzione per gestire errori
     const error=(lingua,res)=>{
