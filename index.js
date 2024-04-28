@@ -64,7 +64,6 @@ app.use(bodyParser.urlencoded({extended:true}))
         (
         nwr["tourism"="attraction"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
         nwr["tourism"="museum"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
-        nwr["tourism"="artwork"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
         );
         out geom;
         `
