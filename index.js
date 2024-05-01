@@ -8,7 +8,7 @@ import gTTS from "gtts"
 import fs from "fs"
 import path from "path"
 import nodemailer from "nodemailer"
-import {MongoClient} from "mongodb"
+import {MongoClient,ObjectId} from "mongodb"
 import cluster from 'cluster';
 import os from 'os';
 
@@ -356,6 +356,16 @@ app.use(bodyParser.urlencoded({extended:true}))
                 res.send("ok")
             }
         });*/
+    })
+    app.put("/board", async (req,res)=>{
+        let info=req.body
+        client.db("gita").collection("user").updateOne({password:info.password,email:info.email},{$push:{board:{id:new ObjectId,citta:info.citta,dataBoard:info.dataBoard,text:info.text,data:info.data}}}).then(e=>{
+            if(e){
+                res.send("ok")
+            }else{
+                res.status(203).send('Error searching for user');
+            }
+        })
     })
     function generateSummary(testo){
         const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
