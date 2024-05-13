@@ -3,6 +3,7 @@ import express from "express"
 import bodyParser from "body-parser"
 import fileupload from "express-fileupload"
 import path from "path"
+import fs from "fs"
 import nodemailer from "nodemailer"
 import {MongoClient,ObjectId} from "mongodb"
 import {Worker,isMainThread} from "worker_threads"
@@ -236,6 +237,32 @@ app.put("/board", async (req,res)=>{
             res.send("ok")
         }else{
             res.status(203).send('Error searching for user');
+        }
+    })
+})
+app.put("/submitToIdWiki", async (req,res)=>{
+    let info=req.body
+    client.db("gita").collection("user").findOne({password:info.password,email:info.email}).then(e=>{
+        if(e){
+            client.db("gita").collection("attractions").insertOne({idWiki:info.idWiki,text:info.text,file:info.file,utente:info.nome}).then((j)=>{
+                if(j){
+                    res.send("ok")
+                }else{
+                    res.status(203).send('Something wrong');
+                }
+            })
+        }else{
+            res.status(203).send('Unregistered user');
+        }
+    })
+})
+app.put("/getSubmitToIdWiki", async (req,res)=>{
+    let info=req.body
+    client.db("gita").collection("attractions").find({idWiki:info.idWiki}).toArray().then(e=>{
+        if(e){
+            res.send(e);
+        }else{
+            res.status(203).send('Find nothing');
         }
     })
 })

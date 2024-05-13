@@ -22,6 +22,14 @@ parentPort.on("message",message=>{
                 parentPort.postMessage({type:"error",error:err});
             }else{
                 parentPort.postMessage("audio/"+random)
+                setTimeout(()=>{
+                    fs.unlink(path.resolve('Voice'+random+'.mp3'), (err) => {
+                        if (err) {
+                            console.error('Errore durante l\'eliminazione del file:', err);
+                            return;
+                        }
+                    });
+                },2000)
             }
         });
     }
