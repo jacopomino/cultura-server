@@ -17,6 +17,12 @@ app.listen(PORT,()=>{
     console.log("run");
 })
 const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
+let db
+client.connect().then(()=>{
+    db=client.db("gita")
+}).catch(err => {
+    console.error("Failed to connect to the database:", err);
+});
 /*import mysql from "mysql2"
 const connection = mysql.createConnection({
     host:"127.0.0.1",
@@ -101,7 +107,12 @@ app.put("/wikiAudio", async (req,res)=>{
     }
 })
 app.get("/audio/:id", async (req,res)=>{
-    res.sendFile(path.resolve('Voice'+req.params.id+'.mp3'))
+    const filePath = path.resolve(`Voice${req.params.id}.mp3`);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(203).send("File not found");
+    }
 })
 app.put("/sendEmail", async (req,res)=>{
     let info=req.body
@@ -150,11 +161,11 @@ app.put("/sendEmail", async (req,res)=>{
 })
 app.put("/signup", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("user").findOne({email:info.email}).then(e=>{
+    db.collection("user").findOne({email:info.email}).then(e=>{
         if(e){
             res.status(203).send('Email already used');
         }else{
-            client.db("gita").collection("user").insertOne(info).then(i=>{
+            db.collection("user").insertOne(info).then(i=>{
                 if(!i){
                     res.status(203).send("The procedure did not take place correctly")
                 }else{
@@ -176,7 +187,7 @@ app.put("/signup", async (req,res)=>{
 })
 app.put("/login", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("user").findOne({password:info.password,email:info.email}).then(e=>{
+    db.collection("user").findOne({password:info.password,email:info.email}).then(e=>{
         if(e){
             res.send(e)
         }else{
@@ -205,7 +216,7 @@ app.put("/login", async (req,res)=>{
 })
 app.put("/delete", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("user").deleteOne({password:info.password,email:info.email}).then(e=>{
+    db.collection("user").deleteOne({password:info.password,email:info.email}).then(e=>{
         if(e){
             res.send("ok")
         }else{
@@ -232,7 +243,7 @@ app.put("/delete", async (req,res)=>{
 })
 app.put("/board", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("user").updateOne({password:info.password,email:info.email},{$push:{board:{id:new ObjectId,citta:info.citta,dataBoard:info.dataBoard,text:info.text,data:info.data}}}).then(e=>{
+    db.collection("user").updateOne({password:info.password,email:info.email},{$push:{board:{id:new ObjectId,citta:info.citta,dataBoard:info.dataBoard,text:info.text,data:info.data}}}).then(e=>{
         if(e){
             res.send("ok")
         }else{
@@ -242,9 +253,9 @@ app.put("/board", async (req,res)=>{
 })
 app.put("/submitToIdWiki", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("user").findOne({password:info.password,email:info.email}).then(e=>{
+    db.collection("user").findOne({password:info.password,email:info.email}).then(e=>{
         if(e){
-            client.db("gita").collection("attractions").insertOne({idWiki:info.idWiki,text:info.text,file:info.file,utente:info.nome}).then((j)=>{
+            db.collection("attractions").insertOne({idWiki:info.idWiki,text:info.text,file:info.file,utente:info.nome}).then((j)=>{
                 if(j){
                     res.send("ok")
                 }else{
@@ -258,7 +269,7 @@ app.put("/submitToIdWiki", async (req,res)=>{
 })
 app.put("/getSubmitToIdWiki", async (req,res)=>{
     let info=req.body
-    client.db("gita").collection("attractions").find({idWiki:info.idWiki}).toArray().then(e=>{
+    db.collection("attractions").find({idWiki:info.idWiki}).toArray().then(e=>{
         if(e){
             res.send(e);
         }else{
