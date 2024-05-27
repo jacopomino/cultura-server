@@ -16,6 +16,7 @@ parentPort.on("message",message=>{
         axios.post('https://overpass-api.de/api/interpreter', query).then(response => {
             parentPort.postMessage(response.data.elements.filter(i=>i.tags.name&&(i.tags.wikipedia||i.tags.wikidata)));
         }).catch(error => {
+            parentPort.postMessage({type:"error",error:error});
             console.error('Errore durante la richiesta Overpass:', error);
         });
     }

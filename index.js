@@ -53,9 +53,11 @@ app.put("/wiki", async (req,res)=>{
         const worker=new Worker('./wiki.js');
         worker.on("message", result => {
             res.send(result)
+            worker.terminate();
         })
         worker.on('error', err => {
             res.status(203).send('Internal Server Error');
+            worker.terminate();
         });
         worker.postMessage({ type:'start',body: req.body});
     }
@@ -65,9 +67,11 @@ app.put("/wikiBound", async (req,res)=>{
         const worker=new Worker('./wikiBound.js');
         worker.on("message", result => {
             res.send(result)
+            worker.terminate();
         })
         worker.on('error', err => {
             res.status(203).send('Internal Server Error');
+            worker.terminate();
         });
         worker.postMessage({ type:'start',body: req.body});
     }
@@ -82,9 +86,11 @@ app.put("/wikiText", async (req,res)=>{
             }else{
                 res.send(result)
             }
+            worker.terminate();
         })
         worker.on('error', err => {
             res.status(203).send('Internal Server Error. Try Again!');
+            worker.terminate();
         });
         worker.postMessage({type:'start',body: req.body});
     }
@@ -98,10 +104,12 @@ app.put("/wikiAudio", async (req,res)=>{
             }else{
                 res.send(result)
             }
+            worker.terminate();
         })
         worker.on('error', err => {
             console.log(err);
             res.status(203).send('Internal Server Error. Try Again!');
+            worker.terminate();
         });
         worker.postMessage({type:'start',body:req.body});
     }
