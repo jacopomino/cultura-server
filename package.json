@@ -23,6 +23,7 @@
     "fs": "^0.0.1-security",
     "google-translate-api": "^2.3.0",
     "gtts": "^0.2.1",
+    "libretranslate": "^1.0.1",
     "mongodb": "^6.4.0",
     "mysql2": "^3.9.3",
     "node-fetch": "^2.7.0",

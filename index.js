@@ -89,6 +89,7 @@ app.put("/wikiText", async (req,res)=>{
             worker.terminate();
         })
         worker.on('error', err => {
+            console.log(err);
             res.status(203).send('Internal Server Error. Try Again!');
             worker.terminate();
         });

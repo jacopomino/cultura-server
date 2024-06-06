@@ -7,11 +7,21 @@ parentPort.on("message",async(message)=>{
         let info=message.body
         if(info.wikidata){
             const response = await axios.get(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks/urls&ids=${info.wikidata}`);
-            const obj=response.data.entities[Object.keys(response.data.entities)].sitelinks[info.lingua+"wiki"]
+            let lingua=info.lingua
+            let obj=response.data.entities[Object.keys(response.data.entities)].sitelinks[lingua+"wiki"]
+            if(!obj){
+                obj=response.data.entities[Object.keys(response.data.entities)].sitelinks["enwiki"]
+            }
+            /*if(!obj){
+                for(let x of Object.values(response.data.entities[Object.keys(response.data.entities)].sitelinks)){
+                    if(!x.site.includes("commons"))lingua=x.site.split("wiki")[0];
+                    obj=response.data.entities[Object.keys(response.data.entities)].sitelinks[lingua+"wiki"]
+                }
+            }*/
             if(obj){
-                axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+obj.title).then(e=>{
+                axios.get("https://"+lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+obj.title).then(e=>{
                     if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
-                        text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua) 
+                        text("https://"+lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua,lingua) 
                     }else{
                         error(info.lingua)
                     }
@@ -20,17 +30,17 @@ parentPort.on("message",async(message)=>{
                 error(info.lingua)
             }
         }else if(info.lat&&info.lon){
-            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
+            axios.get("https://"+lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
                 if(e.data.query.geosearch[0]){
-                    text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.geosearch[0].pageid,info.lingua)
+                    text("https://"+lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.geosearch[0].pageid,info.lingua,lingua)
                 }else{
                     error(info.lingua)
                 }
             })
         }else{
-            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
+            axios.get("https://"+lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
                 if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
-                    text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua)
+                    text("https://"+lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua,lingua)
                 }else{
                     error(info.lingua)
                 }
@@ -40,25 +50,52 @@ parentPort.on("message",async(message)=>{
 })
 //funzione per gestire errori
 const error=(lingua)=>{
-    let titolo="In generale"
-    let testo="Non trovo informazioni a riguardo"
-    let summary="Non trovo informazioni a riguardo"
-    if(lingua==="en"){
-        titolo="In general"
-        testo="I can't find any information about it"
-        summary="I can't find any information about it"
-    }
+    let titolo="Text"
+    let testo="I can't find any information about it."
+    let summary="I can't find any information about it."
     parentPort.postMessage({type:"error",error:[{titolo:titolo,testo:testo,riassunto:summary}]})
 }
 //funzione per ottenere il testo in base alla pagina da analizzare
-const text=(url,lingua)=>{
-    axios.get(url).then(i=>{
+const text=(url,lingua,lingua2)=>{
+    axios.get(url).then(async i=>{
         const img=[]
         cheerio.load(i.data.parse.text["*"])("img").map((i,n)=>{
             n.attribs.src.match(/\b\d{3}px\b/)&&img.push("https:"+n.attribs.src)
         })
         const array=[]
-        let primoH3
+        let testo=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text().replace("Altri progetti","")
+        let summary=generateSummary(testo)
+        /*if(lingua!==lingua2){
+            if(summary.length>500){
+                let parts=splitText(summary,500)
+                summary=""
+                for(let part of parts){
+                    let translated= await translateText(part,lingua)
+                    summary=summary+" "+translated
+                }
+            }else{
+                let translated=await translateText(summary,lingua)
+                summary=translated
+            }
+            if(testo.length>500){
+                let parts=splitText(testo,500)
+                testo=""
+                for(let part of parts){
+                    let translated=await translateText(part,lingua)
+                    testo=testo+" "+translated
+                }
+            }else{
+                let translated=await translateText(testo,lingua)
+                testo=translated
+            }
+        }*/
+        array.push({titolo:"Text",testo:testo,riassunto:summary,img:img})
+        if(array.length>0){
+            parentPort.postMessage(array)
+        }else{
+            error(lingua)
+        }
+        /*let primoH3
         let h
         if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
             if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
@@ -115,7 +152,7 @@ const text=(url,lingua)=>{
             }
         }else{
             error(lingua)
-        }
+        }*/
     })
 }
 function generateSummary(testo){
@@ -136,10 +173,9 @@ function generateSummary(testo){
             return { frase, punteggio };
         });
         punteggioFrasi.sort((a, b) => b.punteggio - a.punteggio);
-
         let paroleRiassunto = 0;
         let i = 0;
-        while(paroleRiassunto < 60 && i < punteggioFrasi.length) {
+        while(paroleRiassunto < 200 && i < punteggioFrasi.length) {
             const paroleFrase = punteggioFrasi[i].frase.split(/\W+/);
             if (paroleRiassunto + paroleFrase.length <= 100) {
                 riassunto += punteggioFrasi[i].frase + ' ';
@@ -150,3 +186,38 @@ function generateSummary(testo){
     }
     return riassunto.trim();
 }
+async function translateText(text, target) {
+    try {
+      const response = await axios.post('https://libretranslate.de/translate', {
+        q: text,
+        source: 'auto',
+        target: target,
+        format: 'text'
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+  
+      return response.data.translatedText;
+    } catch (error) {
+      console.error('Error while translating text:', error);
+      return null;
+    }
+  }
+function splitText(text, maxLength) {
+    const result = [];
+    let startIndex = 0;
+    while (startIndex < text.length) {
+      let endIndex = Math.min(startIndex + maxLength, text.length);
+      // Cerca l'ultimo spazio prima del limite di lunghezza per evitare di spezzare le parole
+      if (endIndex < text.length) {
+        const lastSpaceIndex = text.lastIndexOf(' ', endIndex);
+        if (lastSpaceIndex > startIndex) {
+          endIndex = lastSpaceIndex;
+        }
+      }
+      const chunk = text.slice(startIndex, endIndex);
+      result.push(chunk.trim());
+      startIndex = endIndex;
+    }
+    return result;
+  }
