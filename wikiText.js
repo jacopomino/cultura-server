@@ -30,17 +30,17 @@ parentPort.on("message",async(message)=>{
                 error(info.lingua)
             }
         }else if(info.lat&&info.lon){
-            axios.get("https://"+lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gscoord="+info.lat+"|"+info.lon+"&gsradius=1000&redirects=true&gssearch="+info.nome).then(e=>{
                 if(e.data.query.geosearch[0]){
-                    text("https://"+lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.geosearch[0].pageid,info.lingua,lingua)
+                    text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.geosearch[0].pageid,info.lingua)
                 }else{
                     error(info.lingua)
                 }
             })
         }else{
-            axios.get("https://"+lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
+            axios.get("https://"+info.lingua+".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&exintro=true&redirects=true&titles="+info.nome).then(e=>{
                 if(e.data.query.pages[Object.keys(e.data.query.pages)].pageid){
-                    text("https://"+lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua,lingua)
+                    text("https://"+info.lingua+".wikipedia.org/w/api.php?action=parse&prop=text&format=json&pageid="+e.data.query.pages[Object.keys(e.data.query.pages)].pageid,info.lingua)
                 }else{
                     error(info.lingua)
                 }
@@ -51,8 +51,8 @@ parentPort.on("message",async(message)=>{
 //funzione per gestire errori
 const error=(lingua)=>{
     let titolo="Text"
-    let testo="I can't find any information about it."
-    let summary="I can't find any information about it."
+    let testo="I can't find any information about it in this language.("+lingua+")"
+    let summary="I can't find any information about it in this language.("+lingua+")"
     parentPort.postMessage({type:"error",error:[{titolo:titolo,testo:testo,riassunto:summary}]})
 }
 //funzione per ottenere il testo in base alla pagina da analizzare
@@ -175,7 +175,7 @@ function generateSummary(testo){
         punteggioFrasi.sort((a, b) => b.punteggio - a.punteggio);
         let paroleRiassunto = 0;
         let i = 0;
-        while(paroleRiassunto < 200 && i < punteggioFrasi.length) {
+        while(paroleRiassunto < 300 && i < punteggioFrasi.length) {
             const paroleFrase = punteggioFrasi[i].frase.split(/\W+/);
             if (paroleRiassunto + paroleFrase.length <= 100) {
                 riassunto += punteggioFrasi[i].frase + ' ';
