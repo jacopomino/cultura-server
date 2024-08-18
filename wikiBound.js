@@ -30,6 +30,10 @@ parentPort.on("message",message=>{
             nwr["tourism"="attraction"](${bbox});
             nwr["tourism"="museum"](${bbox});
             nwr["tourism"="artwork"](${bbox});
+            nwr["historic"="castle"](${bbox});
+            nwr["historic"="ruins"](${bbox});
+            nwr["historic"="archaeological_site"](${bbox});
+            nwr["amenity"="place_of_worship"](${bbox});
         );
         out geom;
         `

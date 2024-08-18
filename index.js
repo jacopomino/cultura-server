@@ -123,6 +123,32 @@ app.get("/audio/:id", async (req,res)=>{
         res.status(203).send("File not found");
     }
 })
+app.put("/wikiVideo", async (req,res)=>{
+    if(isMainThread){
+        const worker=new Worker('./wikiVideo.js');
+        worker.on("message", result => {
+            if(result.type==="error"){
+                res.status(203).send(result.error)
+            }else{
+                res.send(result)
+            }
+            worker.terminate();
+        })
+        worker.on('error', err => {
+            res.status(203).send('Internal Server Error. Try Again!');
+            worker.terminate();
+        });
+        worker.postMessage({type:'start',body:req.body});
+    }
+})
+app.get("/video/:id", async (req,res)=>{
+    const filePath = path.resolve(`Video${req.params.id}.mp4`);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(203).send("File not found");
+    }
+})
 app.put("/sendEmail", async (req,res)=>{
     let info=req.body
     let countError=0

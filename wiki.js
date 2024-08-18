@@ -29,6 +29,10 @@ parentPort.on("message",message=>{
         nwr["tourism"="attraction"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
         nwr["tourism"="museum"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
         nwr["tourism"="artwork"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["historic"="castle"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["historic"="ruins"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["historic"="archaeological_site"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
+        nwr["amenity"="place_of_worship"](around:`+info.raggio+`,`+info.lat+`,`+info.lon+`);
         );
         out geom;
         `
