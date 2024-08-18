@@ -1,6 +1,6 @@
 import {parentPort} from "worker_threads"
 import axios from "axios"
-import cheerio from "cheerio"
+import * as cheerio from 'cheerio';
 import {translate} from "google-translate-api-browser"
 
 parentPort.on("message",async(message)=>{
