@@ -83,7 +83,7 @@ const text=async (url,lingua,lingua2)=>{
         cheerio.load(i.data.parse.text["*"])("img").map((i,n)=>{
             n.attribs.src.match(/\b\d{3}px\b/)&&img.push("https:"+n.attribs.src)
         })
-        let testo=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text().replace("Altri progetti","")
+        let testo=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr p').text().replace("Altri progetti","").replace(/\[\d+\]/g, '')
         if(lingua!==lingua2){
             const sentences=testo.split(". ")
             let translated=""
@@ -149,11 +149,7 @@ const text=async (url,lingua,lingua2)=>{
                     }
                 }
             });
-            if(array.length>0){
-                parentPort.postMessage(array)
-            }else{
-                error(lingua)
-            }
+            
         }else{
             error(lingua)
         }*/
@@ -165,31 +161,29 @@ const text=async (url,lingua,lingua2)=>{
     }*/
     return array
 }
-function generateSummary(testo){
+function generateSummary(testo) {
     const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
-    const parole = testo.split(/\W+/);
+    const parole = testo.toLowerCase().split(/\W+/);
     const frequenzaParole = parole.reduce((map, parola) => {
         map[parola] = (map[parola] || 0) + 1;
         return map;
     }, {});
     let riassunto = "";
     if (frasi) {
-        const punteggioFrasi = frasi && frasi.map(frase => {
+        const punteggioFrasi = frasi.map(frase => {
             let punteggio = 0;
-            const paroleFrase = frase.split(/\W+/);
+            const paroleFrase = frase.toLowerCase().split(/\W+/);
             paroleFrase.forEach(parola => {
                 punteggio += frequenzaParole[parola] || 0;
             });
             return { frase, punteggio };
         });
         punteggioFrasi.sort((a, b) => b.punteggio - a.punteggio);
-        let paroleRiassunto = 0;
         let i = 0;
-        while(paroleRiassunto < 300 && i < punteggioFrasi.length) {
-            const paroleFrase = punteggioFrasi[i].frase.split(/\W+/);
-            if (paroleRiassunto + paroleFrase.length <= 100) {
-                riassunto += punteggioFrasi[i].frase + ' ';
-                paroleRiassunto += paroleFrase.length;
+        riassunto = frasi[0];  // Start with the first sentence
+        while (riassunto.length < 500 && i < punteggioFrasi.length) {
+            if (!riassunto.includes(punteggioFrasi[i].frase)) {  // Avoid duplicating the first sentence
+                riassunto += ' ' + punteggioFrasi[i].frase;
             }
             i++;
         }
