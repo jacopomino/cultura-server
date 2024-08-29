@@ -90,7 +90,7 @@ const text=async (url,lingua,lingua2)=>{
             for(let sentence of sentences){
                 try{
                     const translation=await translate(sentence, { to: lingua, corsUrl: "http://cors-anywhere.herokuapp.com/" });
-                    translated=translated+" "+translation.text;
+                    translated=translated+translation.text+". ";
                 }catch(err){
                     console.error("Translation Error:", err);
                 }
