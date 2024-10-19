@@ -49,8 +49,6 @@ parentPort.on("message",message=>{
         (${filtri});
         out geom;
         `
-        console.log(query);
-        
         axios.post('https://overpass-api.de/api/interpreter', query).then(async response => {
             for (let element of response.data.elements.filter(i => i.tags.name && (i.tags.wikipedia || i.tags.wikidata))) {
                 let imageUrl = null;
