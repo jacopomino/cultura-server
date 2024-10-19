@@ -24,19 +24,33 @@ parentPort.on("message",message=>{
     if(message.type==="start"){
         let info=message.body
         const bbox=info.latSw+","+info.lonSw+","+info.latNe+","+info.lonNe
+        let filtri=`nwr["tourism"="artwork"](${bbox});
+            nwr["historic"="archaeological_site"](${bbox});
+            nwr["tourism"="attraction"](${bbox});
+            nwr["historic"="castle"](${bbox});
+            nwr["tourism"="museum"](${bbox});
+            nwr["amenity"="place_of_worship"](${bbox});
+            nwr["historic"="ruins"](${bbox});`
+        if(info['filtro[]']){
+            if(!Array.isArray(info['filtro[]']))info['filtro[]']=Array(info['filtro[]'])
+            filtri=''
+            info['filtro[]'].map(f=>{
+                if(f==="art")filtri+=(`nwr["tourism"="artwork"](${bbox});`)
+                else if(f==="archaeological_sites")filtri+=(`nwr["historic"="archaeological_site"](${bbox});`)
+                else if(f==="attractions")filtri+=(`nwr["tourism"="attraction"](${bbox});`)
+                else if(f==="castles")filtri+=(`nwr["historic"="castle"](${bbox});`)
+                else if(f==="museums")filtri+=(`nwr["tourism"="museum"](${bbox});`)
+                else if(f==="religious_places")filtri+=(`nwr["amenity"="place_of_worship"](${bbox});`)
+                else if(f==="ruins")filtri+=(`nwr["historic"="ruins"](${bbox});`)
+            })
+        }
         const query = `
         [out:json];
-        (
-            nwr["tourism"="attraction"](${bbox});
-            nwr["tourism"="museum"](${bbox});
-            nwr["tourism"="artwork"](${bbox});
-            nwr["historic"="castle"](${bbox});
-            nwr["historic"="ruins"](${bbox});
-            nwr["historic"="archaeological_site"](${bbox});
-            nwr["amenity"="place_of_worship"](${bbox});
-        );
+        (${filtri});
         out geom;
         `
+        console.log(query);
+        
         axios.post('https://overpass-api.de/api/interpreter', query).then(async response => {
             for (let element of response.data.elements.filter(i => i.tags.name && (i.tags.wikipedia || i.tags.wikidata))) {
                 let imageUrl = null;
