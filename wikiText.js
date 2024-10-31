@@ -11,7 +11,7 @@ parentPort.on("message",async(message)=>{
         let info=message.body
         client.connect().then(()=>{
             db=client.db("gita")
-            db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}})
+            db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
         }).catch(err => {
             console.error("Failed to connect to the database:", err);
         });
