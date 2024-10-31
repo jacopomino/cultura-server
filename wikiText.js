@@ -2,10 +2,19 @@ import {parentPort} from "worker_threads"
 import axios from "axios"
 import * as cheerio from 'cheerio';
 import {translate} from "google-translate-api-browser"
+import {MongoClient,ObjectId} from "mongodb"
+const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
+let db
 
 parentPort.on("message",async(message)=>{
     if(message.type==="start"){
         let info=message.body
+        client.connect().then(()=>{
+            db=client.db("gita")
+            db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}})
+        }).catch(err => {
+            console.error("Failed to connect to the database:", err);
+        });
         if(info.wikidata){
             const response = await axios.get(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks/urls&ids=${info.wikidata}`);
             let lingua=info.lingua
