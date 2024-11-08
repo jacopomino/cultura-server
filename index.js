@@ -286,6 +286,31 @@ app.put("/board", async (req,res)=>{
         }
     })
 })
+app.put("/setVote", async (req,res)=>{
+    let info=req.body
+    db.collection("user").findOne({password:info.password,email:info.email}).then(e=>{
+        if(e){
+            db.collection("votes").updateOne({idWiki:info.idWiki,idUtente:info.idUtente,vote:vote}).then((j)=>{
+                if(j){
+                    res.send("ok")
+                }else{
+                    res.status(203).send('Something wrong');
+                }
+            })
+        }else{
+            res.status(203).send('Unregistered user');
+        }
+    })
+})
+app.get("/getVote/:id", async (req,res)=>{
+    db.collection("votes").find({idWiki:req.params.id}).toArray().then(e=>{
+        if(e){
+            res.send(e);
+        }else{
+            res.status(203).send('Find nothing');
+        }
+    })
+})
 app.put("/submitToIdWiki", async (req,res)=>{
     let info=req.body
     db.collection("user").findOne({password:info.password,email:info.email}).then(e=>{
