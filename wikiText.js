@@ -15,7 +15,7 @@ parentPort.on("message",async(message)=>{
                 if(e.cronology&&!e.cronology.find(info.nome)){
                     db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
                 }
-                else {
+                else if(!e.cronology){
                     db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
                 }
             })
