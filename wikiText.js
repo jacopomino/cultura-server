@@ -12,7 +12,12 @@ parentPort.on("message",async(message)=>{
         client.connect().then(()=>{
             db=client.db("gita")
             db.collection("user").findOne({_id:new ObjectId(info.id)}).then(e=>{
-                if(e.cronology&&!e.cronology.find(info.nome))db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
+                if(e.cronology&&!e.cronology.find(info.nome)){
+                    db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
+                }
+                else {
+                    db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
+                }
             })
         }).catch(err => {
             console.error("Failed to connect to the database:", err);
