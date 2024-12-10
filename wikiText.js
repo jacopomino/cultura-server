@@ -12,10 +12,9 @@ parentPort.on("message",async(message)=>{
         client.connect().then(()=>{
             db=client.db("gita")
             db.collection("user").findOne({_id:new ObjectId(info.id)}).then(e=>{
-                if(e.cronology&&!e.cronology.find(info.nome)){
+                if(e.cronology&&!e.cronology.find(i=>i.nome===info.nome)){
                     db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
-                }
-                else if(!e.cronology){
+                }else if(!e.cronology){
                     db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
                 }
             })
