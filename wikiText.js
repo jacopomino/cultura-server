@@ -9,20 +9,22 @@ let db
 parentPort.on("message",async(message)=>{
     if(message.type==="start"){
         let info=message.body
-        client.connect().then(()=>{
-            db=client.db("gita")
-            db.collection("user").findOne({_id:new ObjectId(info.id)}).then(e=>{
-                if(!e.cronology){
-                    db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
-                }else{
-                    if(e.cronology.length>0&&!e.cronology.find(i=>i.nome===info.nome)){
+        if(info.id){
+            client.connect().then(()=>{
+                db=client.db("gita")
+                db.collection("user").findOne({_id:new ObjectId(info.id)}).then(e=>{
+                    if(!e.cronology){
                         db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
+                    }else{
+                        if(e.cronology.length>0&&!e.cronology.find(i=>i.nome===info.nome)){
+                            db.collection("user").findOneAndUpdate({_id:new ObjectId(info.id)},{$push:{cronology:{nome:info.nome,lat:info.lat,lon:info.lon,img:info.img,data:info.data}}}).catch(err =>console.error(err))
+                        }
                     }
-                }
-            })
-        }).catch(err => {
-            console.error("Failed to connect to the database:", err);
-        });
+                })
+            }).catch(err => {
+                console.error("Failed to connect to the database:", err);
+            });
+        }
         if(info.wikidata){
             const response = await axios.get(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=sitelinks/urls&ids=${info.wikidata}`);
             let lingua=info.lingua
