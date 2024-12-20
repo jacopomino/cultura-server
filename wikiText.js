@@ -3,6 +3,7 @@ import axios from "axios"
 import * as cheerio from 'cheerio';
 import {translate} from "google-translate-api-browser"
 import {MongoClient,ObjectId} from "mongodb"
+import {GoogleGenerativeAI} from "@google/generative-ai";
 const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
 let db
 
@@ -116,7 +117,7 @@ const text=async (url,lingua,lingua2)=>{
             }
             testo=translated;
         }
-        let summary=generateSummary(testo)
+        let summary= await generateSummary(testo)
         array.push({titolo:"Text",testo:testo,riassunto:summary,img:img})
         /*let primoH3
         let h
@@ -180,7 +181,19 @@ const text=async (url,lingua,lingua2)=>{
     }*/
     return array
 }
-function generateSummary(testo) {
+async function generateSummary(testo) {
+    try{
+        const apiKey="AIzaSyAEANncF4i3EqwlSfnRic_oOrpynSTVHIU"
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash-exp",
+        });
+        const prompt = "Do a summary of the text max 500 character: "+testo;
+        const result = await model.generateContent([prompt]);
+        return(result.response.text());    
+    }catch(err){
+        console.error(err)
+    }
     const frasi = testo.match(/[^\.!\?]+[\.!\?]+/g);
     const parole = testo.toLowerCase().split(/\W+/);
     const frequenzaParole = parole.reduce((map, parola) => {

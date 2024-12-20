@@ -56,6 +56,7 @@ app.put("/wiki", async (req,res)=>{
             worker.terminate();
         })
         worker.on('error', err => {
+            console.log(err);
             res.status(203).send('Internal Server Error');
             worker.terminate();
         });
@@ -70,6 +71,7 @@ app.put("/wikiBound", async (req,res)=>{
             worker.terminate();
         })
         worker.on('error', err => {
+            console.log(err);
             res.status(203).send('Internal Server Error');
             worker.terminate();
         });
@@ -135,6 +137,7 @@ app.put("/wikiVideo", async (req,res)=>{
             worker.terminate();
         })
         worker.on('error', err => {
+            console.log(err);
             res.status(203).send('Internal Server Error. Try Again!');
             worker.terminate();
         });
@@ -290,7 +293,7 @@ app.put("/setVote", async (req,res)=>{
     let info=req.body
     db.collection("user").findOne({password:info.password,email:info.email}).then(e=>{
         if(e){
-            db.collection("votes").updateOne({idWiki:info.idWiki,idUtente:info.idUtente,vote:vote}).then((j)=>{
+            db.collection("votes").updateOne({idWiki:info.idWiki,idUtente:info.idUtente,vote:info.vote}).then((j)=>{
                 if(j){
                     res.send("ok")
                 }else{
