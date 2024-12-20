@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import {translate} from "google-translate-api-browser"
 import {MongoClient,ObjectId} from "mongodb"
 import {GoogleGenerativeAI} from "@google/generative-ai";
+import dotenv from 'dotenv';
 const client=new MongoClient("mongodb://apo:jac2001min@cluster0-shard-00-00.pdunp.mongodb.net:27017,cluster0-shard-00-01.pdunp.mongodb.net:27017,cluster0-shard-00-02.pdunp.mongodb.net:27017/?ssl=true&replicaSet=atlas-me2tz8-shard-0&authSource=admin&retryWrites=true&w=majority")
 let db
 
@@ -183,7 +184,8 @@ const text=async (url,lingua,lingua2)=>{
 }
 async function generateSummary(testo) {
     try{
-        const apiKey="AIzaSyAEANncF4i3EqwlSfnRic_oOrpynSTVHIU"
+        dotenv.config();
+        const apiKey = process.env.GOOGLE_API_KEY;
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash-exp",
