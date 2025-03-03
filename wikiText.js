@@ -92,8 +92,8 @@ parentPort.on("message",async(message)=>{
 //funzione per gestire errori
 const error=(lingua)=>{
     let titolo="Text"
-    let testo="I can't find any information about it in this language.("+lingua+")"
-    let summary="I can't find any information about it in this language.("+lingua+")"
+    let testo="I can't find any information about it"
+    let summary="I can't find any information about it"
     parentPort.postMessage({type:"error",error:[{titolo:titolo,testo:testo,riassunto:summary}]})
 }
 //funzione per ottenere il testo in base alla pagina da analizzare
@@ -119,68 +119,26 @@ const text=async (url,lingua,lingua2)=>{
             testo=translated;
         }
         let summary= await generateSummary(testo)
-        array.push({titolo:"Text",testo:testo,riassunto:summary,img:img})
-        /*let primoH3
-        let h
-        if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').text()!==""){
-            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0).text()==="Indice"){
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(1)
-            }else{
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2').eq(0)
-            }
-            h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h2'));
-        }else if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').text()!==""){
-            if(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0).text()==="Indice"){
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(1)
-            }else{
-                primoH3=cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3').eq(0)
-            }
-            h=(cheerio.load(i.data.parse.text["*"])('div.mw-content-ltr h3'));
-        }
-        if(primoH3){
-            const paragrafo=primoH3.prevAll("p")
-            let p=""
-            paragrafo.each((index, element)=>{
-                p=(cheerio.load(i.data.parse.text["*"])(element).text())+" "+p;
-            });
-            let summary=""
-            if(p!==""){
-                summary=generateSummary(p)
-                let titolo="In generale"
-                let testo=p
-                if(lingua==="en"){
-                    titolo="In general"
-                }
-                array.push({titolo:titolo,testo:testo,riassunto:summary,img:img})
-            }
-        }
-        if(h){
-            h.each((index, element)=>{
-                let titolo=(cheerio.load(i.data.parse.text["*"])(element).text().replace(/\[.*?\]/g,""));
-                let testo=""
-                let summary=""
-                const paragraphs=cheerio.load(i.data.parse.text["*"])(element).nextUntil('h2', 'p')
-                if(titolo!=="Notes"&&titolo!=="Note"&&titolo!=="Galleria d'immagini"&&titolo!=="Photo gallery"&&titolo!=="Voci correlate"&&titolo!=="References"&&titolo!=="Altri progetti"&&titolo!=="Collegamenti esterni"&&titolo!=="External links"&&titolo!=="See also"){
-                    paragraphs.each((index, paragraph)=>{
-                        testo=testo+" "+cheerio.load(i.data.parse.text["*"])(paragraph).text();
-                    });
-                    if(testo!==""){
-                        summary=generateSummary(testo)
-                        array.push({titolo:titolo,testo:testo,riassunto:summary,img:img})
-                    }
-                }
-            });
-            
-        }else{
-            error(lingua)
-        }*/
+        let text= await generateText(testo)
+        array.push({titolo:"Text",testoAi:text,testo:testo,riassunto:summary,img:img})
     })
-    /*if(array.length>0){
-        parentPort.postMessage(array)
-    }else{
-        error(lingua)
-    }*/
     return array
+}
+async function generateText(testo){
+    try{
+        dotenv.config();
+        const apiKey = process.env.GOOGLE_API_KEY;
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash-exp",
+        });
+        const prompt = 'Transform the following text, maintaining the language, into an array of objects, where each object represents a paragraph of the text. Each object should have two properties: {title, text}.Example output: [{ "title": "Introduction", "text": "This text introduces the main topic..." },...].Text to process:'+testo;
+        const result = await model.generateContent([prompt]);
+        return result.response.text().replace('```json\n','').replace('```','');
+    }catch(err){
+        console.error(err)
+        return testo
+    }
 }
 async function generateSummary(testo) {
     try{
@@ -190,7 +148,7 @@ async function generateSummary(testo) {
         const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash-exp",
         });
-        const prompt = "Do a summary of the text max 500 character: "+testo;
+        const prompt = "Do a summary of the text, maintaining its language, max 500 character: "+testo;
         const result = await model.generateContent([prompt]);
         return(result.response.text());    
     }catch(err){
