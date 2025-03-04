@@ -134,7 +134,7 @@ async function generateText(testo){
         });
         const prompt = 'Transform the following text, maintaining the language, into an array of objects, where each object represents a paragraph of the text. Each object should have two properties: {title, text}.Example output: [{ "title": "Introduction", "text": "This text introduces the main topic..." },...].Text to process:'+testo;
         const result = await model.generateContent([prompt]);
-        return result.response.text().replace('```json\n','').replace('```','');
+        return result.response.text().replace('```json\n','').replace('```','').replaceAll('\n','');
     }catch(err){
         console.error(err)
         return testo
