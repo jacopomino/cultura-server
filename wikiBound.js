@@ -61,10 +61,12 @@ parentPort.on("message",message=>{
             nwr["tourism"="artwork"](${bbox});
             nwr["historic"="archaeological_site"](${bbox});
             nwr["tourism"="attraction"](${bbox});
+            nwr["natural"="beach"](${bbox});
             nwr["historic"="castle"](${bbox});
             nwr["tourism"="museum"](${bbox});
             nwr["amenity"="place_of_worship"](${bbox});
             nwr["historic"="ruins"](${bbox});
+            nwr["tourism"="viewpoint"](${bbox});
         `
         if(info['filtro[]']){
             if(!Array.isArray(info['filtro[]']))info['filtro[]']=Array(info['filtro[]'])
@@ -73,10 +75,12 @@ parentPort.on("message",message=>{
                 if(f==="art")filtri+=(`nwr["tourism"="artwork"](${bbox});`)
                 else if(f==="archaeological_sites")filtri+=(`nwr["historic"="archaeological_site"](${bbox});`)
                 else if(f==="attractions")filtri+=(`nwr["tourism"="attraction"](${bbox});`)
+                else if(f==="beach")filtri+=(`nwr["natural"="beach"](${bbox});`)
                 else if(f==="castles")filtri+=(`nwr["historic"="castle"](${bbox});`)
                 else if(f==="museums")filtri+=(`nwr["tourism"="museum"](${bbox});`)
                 else if(f==="religious_places")filtri+=(`nwr["amenity"="place_of_worship"](${bbox});`)
                 else if(f==="ruins")filtri+=(`nwr["historic"="ruins"](${bbox});`)
+                else if(f==="viewpoint")filtri+=(`nwr["tourism"="viewpoint"](${bbox});`)
             })
         }
         const query = `
