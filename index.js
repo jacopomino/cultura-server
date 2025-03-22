@@ -84,7 +84,26 @@ app.put("/wikiText", async (req,res)=>{
         const worker=new Worker('./wikiText.js');
         worker.on("message", result => {
             if(result.type==="error"){
-                res.send(result.error)
+                res.status(203).send('Internal Server Error. Try Again!');
+            }else{
+                res.send(result)
+            }
+            worker.terminate();
+        })
+        worker.on('error', err => {
+            console.log(err);
+            res.status(203).send('Internal Server Error. Try Again!');
+            worker.terminate();
+        });
+        worker.postMessage({type:'start',body: req.body});
+    }
+})
+app.put("/askSarAI", async (req,res)=>{
+    if(isMainThread){
+        const worker=new Worker('./sarAI.js');
+        worker.on("message", result => {
+            if(result.type==="error"){
+                res.status(203).send('Internal Server Error. Try Again!');
             }else{
                 res.send(result)
             }
